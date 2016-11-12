@@ -70,7 +70,7 @@ func DefaultPackage(name, chainName string) *definitions.Package {
 	pkg := definitions.BlankPackage()
 	pkg.Name = name
 	pkg.ChainName = chainName
-	pkg.PackageID = "" // TODO hash it. [pv]: would util.UniqueName(chainName) do?
+	pkg.PackageID = "" // TODO hash it. [pv]: would util.UniqueName(chainName) do? [rj]: I would recommend not using this.
 	return pkg
 }
 
