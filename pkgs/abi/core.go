@@ -104,17 +104,17 @@ func packInterfaceValue(typ Type, val string) (interface{}, error) {
 		//check for fixed byte types and bytes types
 		if typ.T == BytesTy {
 			bytez := bytes.NewBufferString(val)
-			return hex.RightPadBytes(bytez.Bytes(), bytez.Len()%32), nil
+			return common.RightPadBytes(bytez.Bytes(), bytez.Len()%32), nil
 		} else if typ.T == FixedBytesTy {
 			bytez := bytes.NewBufferString(val)
-			return hex.RightPadBytes(bytez.Bytes(), typ.SliceSize), nil
+			return common.RightPadBytes(bytez.Bytes(), typ.SliceSize), nil
 		} else if typ.Elem.T == BytesTy || typ.Elem.T == FixedBytesTy {
 			val = strings.Trim(val, "[]")
 			arr := strings.Split(val, ",")
 			var sliceOfFixedBytes [][]byte
 			for _, str := range arr {
 				bytez := bytes.NewBufferString(str)
-				sliceOfFixedBytes = append(sliceOfFixedBytes, hex.RightPadBytes(bytez.Bytes(), 32))
+				sliceOfFixedBytes = append(sliceOfFixedBytes, common.RightPadBytes(bytez.Bytes(), 32))
 			}
 			return sliceOfFixedBytes, nil
 		} else {
@@ -290,11 +290,11 @@ func packInterfaceValue(typ Type, val string) (interface{}, error) {
 	}
 }
 
-func Unpacker(abiData, name string, data []byte) ([]*definitions.Variable, error) {
+func Unpacker(abiData, name string, data []byte) ([]*pmDefinitions.Variable, error) {
 
 	abiSpec, err := MakeAbi(abiData)
 	if err != nil {
-		return []*definitions.Variable{}, err
+		return []*pmDefinitions.Variable{}, err
 	}
 
 	numArgs, err := numReturns(abiSpec, name)
@@ -308,14 +308,14 @@ func Unpacker(abiData, name string, data []byte) ([]*definitions.Variable, error
 		var unpacked interface{}
 		err = abiSpec.Unpack(&unpacked, name, data)
 		if err != nil {
-			return []*definitions.Variable{}, err
+			return []*pmDefinitions.Variable{}, err
 		}
 		return formatUnpackedReturn(abiSpec, name, unpacked)
 	} else {
 		var unpacked []interface{}
 		err = abiSpec.Unpack(&unpacked, name, data)
 		if err != nil {
-			return []*definitions.Variable{}, err
+			return []*pmDefinitions.Variable{}, err
 		}
 		return formatUnpackedReturn(abiSpec, name, unpacked)
 	}
@@ -340,8 +340,8 @@ func numReturns(abiSpec ABI, methodName string) (uint, error) {
 	}
 }
 
-func formatUnpackedReturn(abiSpec ABI, methodName string, values ...interface{}) ([]*definitions.Variable, error) {
-	var returnVars []*definitions.Variable
+func formatUnpackedReturn(abiSpec ABI, methodName string, values ...interface{}) ([]*pmDefinitions.Variable, error) {
+	var returnVars []*pmDefinitions.Variable
 	method, exist := abiSpec.Methods[methodName]
 	if !exist {
 		return nil, fmt.Errorf("method '%s' not found", methodName)
@@ -350,7 +350,7 @@ func formatUnpackedReturn(abiSpec ABI, methodName string, values ...interface{})
 	if len(method.Outputs) > 1 {
 		slice := reflect.ValueOf(reflect.ValueOf(values).Index(0).Interface())
 		for i, output := range method.Outputs {
-			arg, err := getStringValue(slice.Index(i).Interface(), output)
+			arg, err := getStringValue(slice.Index(i).Interface(), output.Type)
 			if err != nil {
 				return nil, err
 			}
@@ -361,7 +361,7 @@ func formatUnpackedReturn(abiSpec ABI, methodName string, values ...interface{})
 				nameNum := i
 				name = strconv.Itoa(nameNum)
 			}
-			returnVar := &definitions.Variable{
+			returnVar := &pmDefinitions.Variable{
 				Name:  name,
 				Value: arg,
 			}
@@ -370,7 +370,7 @@ func formatUnpackedReturn(abiSpec ABI, methodName string, values ...interface{})
 	} else {
 		value := values[0]
 		output := method.Outputs[0]
-		arg, err := getStringValue(value, output)
+		arg, err := getStringValue(value, output.Type)
 		if err != nil {
 			return nil, err
 		}
@@ -381,7 +381,7 @@ func formatUnpackedReturn(abiSpec ABI, methodName string, values ...interface{})
 			nameNum := 0
 			name = strconv.Itoa(nameNum)
 		}
-		returnVar := &definitions.Variable{
+		returnVar := &pmDefinitions.Variable{
 			Name:  name,
 			Value: arg,
 		}
@@ -390,8 +390,7 @@ func formatUnpackedReturn(abiSpec ABI, methodName string, values ...interface{})
 	return returnVars, nil
 }
 
-func getStringValue(value interface{}, output Argument) (string, error) {
-	typ := output.Type
+func getStringValue(value interface{}, typ Type) (string, error) {
 
 	if typ.IsSlice || typ.IsArray {
 		if typ.T == BytesTy || typ.T == FixedBytesTy {
@@ -403,15 +402,18 @@ func getStringValue(value interface{}, output Argument) (string, error) {
 			for i := 0; i < byteVals.Len(); i++ {
 				val = append(val, string(bytes.Trim(byteVals.Index(i).Interface().([]byte), "\x00")[:]))
 			}
-
 		} else {
-			val = strings.Split(fmt.Sprintf("%v", value), " ")
+			values := reflect.ValueOf(value)
+			for i := 0; i < typ.SliceSize; i++ {
+				underlyingValue, err := getStringValue(values.Index(i).Interface(), *typ.Elem)
+				if err != nil {
+					return "", err
+				}
+				val = append(val, underlyingValue)
+			}
 		}
 		StringVal := strings.Join(val, ",")
-
-		if typ.Elem.T == FixedBytesTy {
-			StringVal = strings.Join([]string{"[", StringVal, "]"}, "")
-		}
+		StringVal = strings.Join([]string{"[", StringVal, "]"}, "")
 		return StringVal, nil
 	} else {
 		switch typ.T {
@@ -420,14 +422,14 @@ func getStringValue(value interface{}, output Argument) (string, error) {
 			case 8, 16, 32, 64:
 				return fmt.Sprintf("%v", value), nil
 			default:
-				return hex.S256(value.(*big.Int)).String(), nil
+				return common.S256(value.(*big.Int)).String(), nil
 			}
 		case UintTy:
 			switch typ.Size {
 			case 8, 16, 32, 64:
 				return fmt.Sprintf("%v", value), nil
 			default:
-				return hex.U256(value.(*big.Int)).String(), nil
+				return common.U256(value.(*big.Int)).String(), nil
 			}
 		case BoolTy:
 			return strconv.FormatBool(value.(bool)), nil
