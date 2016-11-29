@@ -16,15 +16,42 @@ import (
 	"github.com/eris-ltd/eris-db/txs"
 )
 
-func SendJob(send *definitions.Send, do *definitions.Do) (string, error) {
+// ------------------------------------------------------------------------
+// Transaction Jobs
+// ------------------------------------------------------------------------
 
-	// Process Variables
-	send.Source, _ = util.PreProcess(send.Source, do)
-	send.Destination, _ = util.PreProcess(send.Destination, do)
-	send.Amount, _ = util.PreProcess(send.Amount, do)
+type Send struct {
+	// (Optional, if account job or global account set) address of the account from which to send (the
+	// public key for the account must be available to eris-keys)
+	Source string `mapstructure:"source" json:"source" yaml:"source" toml:"source"`
+	// (Required) address of the account to send the tokens
+	Destination string `mapstructure:"destination" json:"destination" yaml:"destination" toml:"destination"`
+	// (Required) amount of tokens to send from the `source` to the `destination`
+	Amount string `mapstructure:"amount" json:"amount" yaml:"amount" toml:"amount"`
+	// (Optional, advanced only) nonce to use when eris-keys signs the transaction (do not use unless you
+	// know what you're doing)
+	Nonce string `mapstructure:"nonce" json:"nonce" yaml:"nonce" toml:"nonce"`
+}
 
+func (send *Send) PreProcess(do *definitions.Do) error {
+	send.Source, err := util.StringPreProcess(send.Source, do)
+	if err != nil {
+		return err
+	}
+	send.Destination, err = util.StringPreProcess(send.Destination, do)
+	if err != nil {
+		return err
+	}
+	send.Amount, err = util.StringPreProcess(send.Amount, do)
+	if err != nil {
+		return err
+	}
 	// Use Default
 	send.Source = useDefault(send.Source, do.Package.Account)
+	return
+}
+
+func (send *Send) Execute(do *definitions.Do) (*definitions.JobResults, error) {
 
 	// Don't use pubKey if account override
 	var oldKey string
@@ -56,14 +83,85 @@ func SendJob(send *definitions.Send, do *definitions.Do) (string, error) {
 	return txFinalize(do, tx)
 }
 
-func RegisterNameJob(name *definitions.RegisterName, do *definitions.Do) (string, error) {
-	// Process Variables
-	name.DataFile, _ = util.PreProcess(name.DataFile, do)
+type RegisterName struct {
+	// (Optional, if account job or global account set) address of the account from which to send (the
+	// public key for the account must be available to eris-keys)
+	Source string `mapstructure:"source" json:"source" yaml:"source" toml:"source"`
+	// (Required) name which will be registered
+	Name string `mapstructure:"name" json:"name" yaml:"name" toml:"name"`
+	// (Optional, if data_file is used; otherwise required) data which will be stored at the `name` key
+	Data string `mapstructure:"data" json:"data" yaml:"data" toml:"data"`
+	// (Optional) csv file in the form (name,data[,amount]) which can be used to bulk register names
+	DataFile string `mapstructure:"data_file" json:"data_file" yaml:"data_file" toml:"data_file"`
+	// (Optional) amount of blocks which the name entry will be reserved for the registering user
+	Amount string `mapstructure:"amount" json:"amount" yaml:"amount" toml:"amount"`
+	// (Optional) validators' fee
+	Fee string `mapstructure:"fee" json:"fee" yaml:"fee" toml:"fee"`
+	// (Optional, advanced only) nonce to use when eris-keys signs the transaction (do not use unless you
+	// know what you're doing)
+	Nonce string `mapstructure:"nonce" json:"nonce" yaml:"nonce" toml:"nonce"`
+}
 
+/*func (name *RegisterName) PreProcess(do *definitions.Do) error {
+	name.DataFile, err := util.StringPreProcess(name.DataFile, do)
+	if err != nil {
+		return err
+	}
+	name.Amount, err = util.StringPreProcess(name.Amount, do)
+	if err != nil {
+		return err
+	}
+	name.Fee, err = util.StringPreProcess(name.Fee, do)
+	if err != nil {
+		return err
+	}
+
+	// Set Defaults
+	name.Source = useDefault(name.Source, do.Package.Account)
+	name.Fee = useDefault(name.Fee, do.DefaultFee)
+	name.Amount = useDefault(name.Amount, do.DefaultAmount)
 	// If a data file is given it should be in csv format and
 	// it will be read first. Once the file is parsed and sent
 	// to the chain then a single nameRegTx will be sent if that
 	// has been populated.
+	if name.DataFile != "" {
+		// open the file and use a reader
+		fileReader, err := os.Open(name.DataFile)
+		if err != nil {
+			log.Error("ERROR =>")
+			return "", err
+		}
+
+		defer fileReader.Close()
+		r := csv.NewReader(fileReader)
+
+		// loop through the records
+		for {
+			// Read the record
+			record, err := r.Read()
+
+			// Catch the errors
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				log.Error("ERROR =>")
+				return "", err
+			}
+
+			// Sink the Amount into the third slot in the record if
+			// it doesn't exist
+			if len(record) <= 2 {
+				record = append(record, name.Amount)
+			}
+		}
+	}
+}
+
+func RegisterNameJob(name *definitions.RegisterName, do *definitions.Do) (string, error) {
+
+
+
 	if name.DataFile != "" {
 		// open the file and use a reader
 		fileReader, err := os.Open(name.DataFile)
@@ -135,13 +233,7 @@ func registerNameTx(name *definitions.RegisterName, do *definitions.Do) (string,
 	name.Source, _ = util.PreProcess(name.Source, do)
 	name.Name, _ = util.PreProcess(name.Name, do)
 	name.Data, _ = util.PreProcess(name.Data, do)
-	name.Amount, _ = util.PreProcess(name.Amount, do)
-	name.Fee, _ = util.PreProcess(name.Fee, do)
 
-	// Set Defaults
-	name.Source = useDefault(name.Source, do.Package.Account)
-	name.Fee = useDefault(name.Fee, do.DefaultFee)
-	name.Amount = useDefault(name.Amount, do.DefaultAmount)
 
 	// Don't use pubKey if account override
 	var oldKey string
@@ -172,19 +264,58 @@ func registerNameTx(name *definitions.RegisterName, do *definitions.Do) (string,
 	// Sign, broadcast, display
 	return txFinalize(do, tx)
 }
+*/
 
-func PermissionJob(perm *definitions.Permission, do *definitions.Do) (string, error) {
-	// Process Variables
-	perm.Source, _ = util.PreProcess(perm.Source, do)
-	perm.Action, _ = util.PreProcess(perm.Action, do)
-	perm.PermissionFlag, _ = util.PreProcess(perm.PermissionFlag, do)
-	perm.Value, _ = util.PreProcess(perm.Value, do)
-	perm.Target, _ = util.PreProcess(perm.Target, do)
-	perm.Role, _ = util.PreProcess(perm.Role, do)
+type Permission struct {
+	// (Optional, if account job or global account set) address of the account from which to send (the
+	// public key for the account must be available to eris-keys)
+	Source string `mapstructure:"source" json:"source" yaml:"source" toml:"source"`
+	// (Required) actions must be in the set ["set_base", "unset_base", "set_global", "add_role" "rm_role"]
+	Action string `mapstructure:"action" json:"action" yaml:"action" toml:"action"`
+	// (Required, unless add_role or rm_role action selected) the name of the permission flag which is to
+	// be updated
+	PermissionFlag string `mapstructure:"permission" json:"permission" yaml:"permission" toml:"permission"`
+	// (Required) the value of the permission or role which is to be updated
+	Value string `mapstructure:"value" json:"value" yaml:"value" toml:"value"`
+	// (Required) the target account which is to be updated
+	Target string `mapstructure:"target" json:"target" yaml:"target" toml:"target"`
+	// (Required, if add_role or rm_role action selected) the role which should be given to the account
+	Role string `mapstructure:"role" json:"role" yaml:"role" toml:"role"`
+	// (Optional, advanced only) nonce to use when eris-keys signs the transaction (do not use unless you
+	// know what you're doing)
+	Nonce string `mapstructure:"nonce" json:"nonce" yaml:"nonce" toml:"nonce"`
+}
 
+func (perm *Permission) PreProcess(do *definitions.Do) err error {
+	perm.Source, err = util.StringPreProcess(perm.Source, do)
+	if err != nil {
+		return err
+	}
+	perm.Action, err = util.StringPreProcess(perm.Action, do)
+	if err != nil {
+		return err
+	}
+	perm.PermissionFlag, err = util.StringPreProcess(perm.PermissionFlag, do)
+	if err != nil {
+		return err
+	}
+	perm.Value, err = util.StringPreProcess(perm.Value, do)
+	if err != nil {
+		return err
+	}
+	perm.Target, err = util.StringPreProcess(perm.Target, do)
+	if err != nil {
+		return err
+	}
+	perm.Role, err = util.StringPreProcess(perm.Role, do)
+	if err != nil {
+		return err
+	}
 	// Set defaults
 	perm.Source = useDefault(perm.Source, do.Package.Account)
+}
 
+func (perm *Permission) Execute(do *definitions.Do) (*definitions.JobResults, error) {
 	log.Debug("Target: ", perm.Target)
 	log.Debug("Marmots Deny: ", perm.Role)
 	log.Debug("Action: ", perm.Action)
@@ -230,16 +361,38 @@ func PermissionJob(perm *definitions.Permission, do *definitions.Do) (string, er
 	return txFinalize(do, tx)
 }
 
-func BondJob(bond *definitions.Bond, do *definitions.Do) (string, error) {
-	// Process Variables
-	bond.Account, _ = util.PreProcess(bond.Account, do)
-	bond.Amount, _ = util.PreProcess(bond.Amount, do)
-	bond.PublicKey, _ = util.PreProcess(bond.PublicKey, do)
+type Bond struct {
+	// (Required) public key of the address which will be bonded
+	PublicKey string `mapstructure:"pub_key" json:"pub_key" yaml:"pub_key" toml:"pub_key"`
+	// (Required) address of the account which will be bonded
+	Account string `mapstructure:"account" json:"account" yaml:"account" toml:"account"`
+	// (Required) amount of tokens which will be bonded
+	Amount string `mapstructure:"amount" json:"amount" yaml:"amount" toml:"amount"`
+	// (Optional, advanced only) nonce to use when eris-keys signs the transaction (do not use unless you
+	// know what you're doing)
+	Nonce string `mapstructure:"nonce" json:"nonce" yaml:"nonce" toml:"nonce"`
+}
 
+func (bond *BondJob) PreProcess(do *definitions.Do) err error {
+	// Process Variables
+	bond.Account, err = util.StringPreProcess(bond.Account, do)
+	if err != nil {
+		return err
+	}
+	bond.Amount, err = util.StringPreProcess(bond.Amount, do)
+	if err != nil {
+		return err
+	}
+	bond.PublicKey, err = util.StringPreProcess(bond.PublicKey, do)
+	if err != nil {
+		return err
+	}
 	// Use Defaults
 	bond.Account = useDefault(bond.Account, do.Package.Account)
 	do.PublicKey = useDefault(do.PublicKey, bond.PublicKey)
+}
 
+func (bond *BondJob) Execute(do *definitions.Do) (*definitions.JobResults, error) {
 	// Formulate tx
 	log.WithFields(log.Fields{
 		"public key": do.PublicKey,
@@ -257,18 +410,28 @@ func BondJob(bond *definitions.Bond, do *definitions.Do) (string, error) {
 	return txFinalize(do, tx)
 }
 
-func UnbondJob(unbond *definitions.Unbond, do *definitions.Do) (string, error) {
-	// Process Variables
-	var err error
+type Unbond struct {
+	// (Required) address of the account which to unbond
+	Account string `mapstructure:"account" json:"account" yaml:"account" toml:"account"`
+	// (Required) block on which the unbonding will take place (users may unbond at any
+	// time >= currentBlock)
+	Height string `mapstructure:"height" json:"height" yaml:"height" toml:"height"`
+}
+
+func (unbond *Unbond) PreProcess(do *definitions.Do) err error {
 	unbond.Account, err = util.PreProcess(unbond.Account, do)
+	if err != nil {
+		return err
+	}
 	unbond.Height, err = util.PreProcess(unbond.Height, do)
 	if err != nil {
-		return "", err
+		return err
 	}
-
 	// Use defaults
 	unbond.Account = useDefault(unbond.Account, do.Package.Account)
+}
 
+func (unbond *Unbond) Execute(do *definitions.Do) (*definitions.JobResults, error) {
 	// Don't use pubKey if account override
 	var oldKey string
 	if unbond.Account != do.Package.Account {
@@ -294,6 +457,14 @@ func UnbondJob(unbond *definitions.Unbond, do *definitions.Do) (string, error) {
 
 	// Sign, broadcast, display
 	return txFinalize(do, tx)
+}
+
+type Rebond struct {
+	// (Required) address of the account which to rebond
+	Account string `mapstructure:"account" json:"account" yaml:"account" toml:"account"`
+	// (Required) block on which the rebonding will take place (users may rebond at any
+	// time >= (unbondBlock || currentBlock))
+	Height string `mapstructure:"height" json:"height" yaml:"height" toml:"height"`
 }
 
 func RebondJob(rebond *definitions.Rebond, do *definitions.Do) (string, error) {
@@ -335,8 +506,8 @@ func RebondJob(rebond *definitions.Rebond, do *definitions.Do) (string, error) {
 	return txFinalize(do, tx)
 }
 
-func txFinalize(do *definitions.Do, tx interface{}) (string, error) {
-	var result string
+func txFinalize(do *definitions.Do, tx interface{}) (*definitions.JobResults, error) {
+	var result &JobResults
 
 	erisNodeClient := client.NewErisNodeClient(do.ChainName)
 	erisKeyClient := keys.NewErisKeyClient(do.Signer)
@@ -350,7 +521,7 @@ func txFinalize(do *definitions.Do, tx interface{}) (string, error) {
 		return "", err
 	}
 
-	result = fmt.Sprintf("%X", res.Hash)
+	result.JobResult = fmt.Sprintf("%X", res.Hash)
 	return result, nil
 }
 
