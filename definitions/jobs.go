@@ -49,8 +49,6 @@ type Deploy struct {
 	// (Optional, advanced only) nonce to use when eris-keys signs the transaction (do not use unless you
 	// know what you're doing)
 	Nonce string `mapstructure:"nonce" json:"nonce" yaml:"nonce" toml:"nonce"`
-	// (Optional) todo
-	Variables []*Variable
 }
 
 type Call struct {

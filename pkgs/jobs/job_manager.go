@@ -250,3 +250,7 @@ func postProcess(do *definitions.Do) error {
 
 	return nil
 }
+
+func dbCalls(job JobsCommon) (interface{}, error) {
+
+}

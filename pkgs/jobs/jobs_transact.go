@@ -33,22 +33,11 @@ type Send struct {
 	Nonce string `mapstructure:"nonce" json:"nonce" yaml:"nonce" toml:"nonce"`
 }
 
-func (send *Send) PreProcess(do *definitions.Do) error {
-	send.Source, err := util.StringPreProcess(send.Source, do)
-	if err != nil {
-		return err
-	}
+func (send *Send) PreProcess(do *definitions.Do) err error {
+	send.Source, err = util.StringPreProcess(send.Source, do)
 	send.Destination, err = util.StringPreProcess(send.Destination, do)
-	if err != nil {
-		return err
-	}
 	send.Amount, err = util.StringPreProcess(send.Amount, do)
-	if err != nil {
-		return err
-	}
-	// Use Default
 	send.Source = useDefault(send.Source, do.Package.Account)
-	return
 }
 
 func (send *Send) Execute(do *definitions.Do) (*definitions.JobResults, error) {
