@@ -3,8 +3,15 @@ package jobs
 type Jobs struct {
 	Account   string
 	Jobs      []*Job `mapstructure:"jobs" json:"jobs" yaml:"jobs" toml:"jobs"`
-	JobMap    map[string]*Job
+	JobMap    map[string]JobResults
 	Libraries map[string]string
+}
+
+type JobResults struct {
+	// Full Result
+	JobResult string
+	// Map of job name to results
+	JobVars map[string]string
 }
 
 type Job struct {
@@ -45,6 +52,9 @@ type Job struct {
 	QueryVals *QueryVals `mapstructure:"query-vals" json:"query-vals" yaml:"query-vals" toml:"query-vals"`
 	// Makes and assertion (useful for testing purposes)
 	Assert *Assert `mapstructure:"assert" json:"assert" yaml:"assert" toml:"assert"`
+
+	// Results of the job
+	Results JobResults
 }
 
 func EmptyJobs() *Jobs {
