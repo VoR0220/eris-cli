@@ -1,14 +1,15 @@
 package jobs
 
-import (
+/*import (
 	"fmt"
 	"strings"
 
 	"github.com/eris-ltd/eris-cli/definitions"
 	"github.com/eris-ltd/eris-cli/log"
 	"github.com/eris-ltd/eris-cli/util"
-)
+)*/
 
+/* [rj] commenting out for the sake of unit testing loading
 func RunJobs(do *definitions.Do) error {
 	var err error
 	var dup bool = false
@@ -185,3 +186,4 @@ func postProcess(do *definitions.Do) error {
 
 	return nil
 }
+*/

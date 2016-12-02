@@ -32,8 +32,6 @@ type Package struct {
 
 	// from epm
 	Account   string
-	Jobs      []*Jobs
-	Libraries map[string]string
 }
 
 func BlankPackageDefinition() *PackageDefinition {

@@ -4,15 +4,15 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/eris-ltd/eris-cli/definitions"
+	"github.com/eris-ltd/eris-cli/pkgs/jobs"
 	"github.com/eris-ltd/eris-cli/log"
 
 	"github.com/spf13/viper"
 )
 
-func LoadPackage(fileName string) (*definitions.Package, error) {
-	log.Info("Loading eris-pm Package Definition File.")
-	var pkg = definitions.BlankPackage()
+func LoadJobs(fileName string) (*jobs.Jobs, error) {
+	log.Info("Loading Eris Run File...")
+	var jobset = jobs.EmptyJobs()
 	var epmJobs = viper.New()
 
 	// setup file
@@ -35,13 +35,13 @@ func LoadPackage(fileName string) (*definitions.Package, error) {
 
 	// load file
 	if err := epmJobs.ReadInConfig(); err != nil {
-		return nil, fmt.Errorf("Sorry, the marmots were unable to load the eris-pm jobs file. Please check your path.\nERROR =>\t\t\t%v", err)
+		return nil, fmt.Errorf("Sorry, the marmots were unable to load the eris jobs file. Please check your path.\nERROR =>\t\t\t%v", err)
 	}
 
 	// marshall file
-	if err := epmJobs.Unmarshal(pkg); err != nil {
-		return nil, fmt.Errorf("Sorry, the marmots could not figure that eris-pm jobs file out.\nPlease check your epm.yaml is properly formatted.\n")
+	if err := epmJobs.Unmarshal(jobset); err != nil {
+		return nil, fmt.Errorf("Sorry, the marmots could not figure that eris jobs file out.\nPlease check your epm.yaml is properly formatted.\n")
 	}
 
-	return pkg, nil
+	return jobset, nil
 }

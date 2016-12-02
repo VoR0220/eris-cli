@@ -5,6 +5,7 @@ import (
 	"regexp"
 
 	"github.com/eris-ltd/eris-cli/definitions"
+	//"github.com/eris-ltd/eris-cli/pkgs/jobs"
 	"github.com/eris-ltd/eris-cli/log"
 )
 
@@ -67,6 +68,7 @@ Debugging this error is tricky, but don't worry the marmot recovery checklist is
 `, err, do.Package.Account, do.Package.Account)
 }
 
+/* gives import cycle error to import from pkgs/jobs
 func ABIErrorHandler(do *definitions.Do, err error, call *definitions.Call, query *definitions.QueryContract) (string, error) {
 	switch {
 	case call != nil:
@@ -103,4 +105,4 @@ The marmot recovery checklist is...
   * make sure you're calling or querying the right function
   * make sure you're using the correct variables for job results
 `)
-}
+}*/
