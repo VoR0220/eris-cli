@@ -30,13 +30,9 @@ func RunPackage(do *definitions.Do) error {
 		return err
 	}
 
-	var err error
-	// Load the package if it doesn't exist
-	if do.Package == nil {
-		do.Package, err = loaders.LoadPackage(do.YAMLPath)
-		if err != nil {
-			return err
-		}
+	loadedJobs, err := loaders.LoadJobs(do.YAMLPath)
+	if err != nil {
+		return err
 	}
 
 	if do.LocalCompiler {
@@ -46,7 +42,7 @@ func RunPackage(do *definitions.Do) error {
 		getLocalCompilerData(do)
 	}
 
-	return jobs.RunJobs(do)
+	return loadedJobs.RunJobs(do)
 }
 
 func getChainIP(chainName string) (string, error) {
