@@ -1,11 +1,10 @@
-package jobs
 
 import (
 	"fmt"
 	"strings"
 )
 
-func StringPreProcess(val string, jobs *Jobs) (string, error) {
+func stringPreProcess(val string, jobs *Jobs) (string, error) {
 	switch {
 	/*case strings.HasPrefix(val, "$block"):
 		return replaceBlockVariable(val, do)*/
@@ -182,4 +181,11 @@ func GetReturnValue(vars []*definitions.Variable) string {
 	} else {
 		return ""
 	}
+}
+
+func useDefault(thisOne, defaultOne string) string {
+	if thisOne == "" {
+		return defaultOne
+	}
+	return thisOne
 }

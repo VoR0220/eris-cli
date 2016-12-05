@@ -75,6 +75,8 @@ func loadJobsForTesting(config string) (*Jobs, error){
 	return jobset, nil
 }
 
+// Test duplicates
+
 func addJobResultsToMap(jobs *Jobs) (*Jobs, error) {
 	for i, job := range jobs {
 		job = job.PreProcess(jobs)

@@ -1,18 +1,21 @@
 package jobs
 
-type Jobs struct {
-	Account   string
-	Jobs      []*Job `mapstructure:"jobs" json:"jobs" yaml:"jobs" toml:"jobs"`
-	JobMap    map[string]JobResults
-	Libraries map[string]string
-}
-
 type JobResults struct {
 	// Full Result
 	JobResult string
 	// Map of job name to results
 	JobVars map[string]string
 }
+
+type JobsCommon interface {
+	PreProcess(*Jobs) error
+	Execute(*Do) (*JobResults, error)
+}
+
+/*type ContextBasedResults interface {
+	ResultContext() string
+	GetResultOnCurrentContext() string
+}*/
 
 type Job struct {
 	// Name of the job
@@ -55,8 +58,4 @@ type Job struct {
 
 	// Results of the job
 	Results JobResults
-}
-
-func EmptyJobs() *Jobs {
-	return &Jobs{}
 }

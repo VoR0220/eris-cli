@@ -1,13 +1,70 @@
 package jobs
 
-/*import (
+import (
 	"fmt"
 	"strings"
 
 	"github.com/eris-ltd/eris-cli/definitions"
 	"github.com/eris-ltd/eris-cli/log"
 	"github.com/eris-ltd/eris-cli/util"
-)*/
+)
+
+type Jobs struct {
+	Account   string
+	Jobs      []*Job `mapstructure:"jobs" json:"jobs" yaml:"jobs" toml:"jobs"`
+	JobMap    map[string]JobResults
+}
+
+func EmptyJobs() *Jobs {
+	return &Jobs{}
+}
+
+func (jobs *Jobs) RunJobs(do *definitions.Do) (string, error) {
+	var jobNames []string
+	if len(do.DefaultSets) >= 1 {
+		jobs.defaultSetJobs()
+	}
+	if do.DefaultAddr != "" {
+		jobs.defaultAddrJob(do.DefaultOutput)
+	}
+	for i, job := range jobs {
+		found, overwrite, at := checkForDuplicateQueryOverwrite(job.Name, jobNames, do.Overwrite)
+		if found && !overwrite {
+			continue
+		} else if found && overwrite {
+			//overwrite the name
+			jobNames = append(jobNames[:at], jobNames[at+1:]...)
+		}
+		jobNames = append(jobNames, job.Name)
+		jobs.announce(job, i)
+		job.Preprocess(jobs)
+		job.Execute()
+	}
+}
+
+func checkForDuplicateQueryOverwrite(name string, jobNames []string, defaultOverwrite bool) (bool, bool, int) {
+	var dup bool = false
+	var index int = -1
+	for i, checkForDup := range jobNames {
+		if checkForDup == name {
+			dup = true
+			index = i
+			break
+		}
+	}
+	if dup {
+		if defaultOverwrite {
+			log.WithField("Overwriting job name", job.JobName)
+		} else {
+			overwriteWarning := "You are about to overwrite a previous job name, continue?"
+			if util.QueryYesOrNo(overwriteWarning, []int{}...) == util.No {
+				return true, false, index
+			}
+			return true, true, index
+		}
+	}
+	return dup, defaultOverwrite, index
+}
 
 /* [rj] commenting out for the sake of unit testing loading
 func RunJobs(do *definitions.Do) error {
@@ -127,10 +184,17 @@ func announce(job, typ string) {
 	log.Warn("\n*****Executing Job*****\n")
 	log.WithField("=>", job).Warn("Job Name")
 	log.WithField("=>", typ).Info("Type")
+}*/
+
+func (jobs *Jobs) announce(job JobsCommon, index int) {
+	log.Warn("\n*****Executing Job*****\n")
+	log.WithField("=>", jobs.Jobs[index].Name).Warn("Job Name")
+	typ := fmt.Sprintf("%T", job)	
+	log.WithField("=>", typ).Info("Type")
 }
 
-func defaultAddrJob(do *definitions.Do) {
-	oldJobs := do.Package.Jobs
+func (jobs *Jobs) defaultAddrJob(do *definitions.Do) {
+	oldJobs := jobs
 
 	newJob := &definitions.Jobs{
 		JobName: "defaultAddr",
@@ -141,13 +205,13 @@ func defaultAddrJob(do *definitions.Do) {
 		},
 	}
 
-	do.Package.Jobs = append([]*definitions.Jobs{newJob}, oldJobs...)
+	jobs = append([]*definitions.Jobs{newJob}, oldJobs...)
 }
 
-func defaultSetJobs(do *definitions.Do) {
-	oldJobs := do.Package.Jobs
+func (jobs *Jobs) defaultSetJobs() {
+	oldJobs := jobs
 
-	newJobs := []*definitions.Jobs{}
+	newJobs := []*Jobs{}
 
 	for _, setr := range do.DefaultSets {
 		blowdUp := strings.Split(setr, "=")
@@ -163,14 +227,14 @@ func defaultSetJobs(do *definitions.Do) {
 		}
 	}
 
-	do.Package.Jobs = append(newJobs, oldJobs...)
+	jobs = append(newJobs, oldJobs...)
 }
 
-func postProcess(do *definitions.Do) error {
-	switch do.DefaultOutput {
+/*func (jobs *Jobs) postProcess(defaultOutput string) error {
+	switch defaultOutput {
 	case "csv":
 		log.Info("Writing [epm.csv] to current directory")
-		for _, job := range do.Package.Jobs {
+		for _, job := range jobs {
 			if err := util.WriteJobResultCSV(job.JobName, job.JobResult); err != nil {
 				return err
 			}
@@ -185,5 +249,4 @@ func postProcess(do *definitions.Do) error {
 	}
 
 	return nil
-}
-*/
+}*/

@@ -12,6 +12,37 @@ type Account struct {
 	Address string `mapstructure:"address" json:"address" yaml:"address" toml:"address"`
 }
 
+
+func (acc *Account) PreProcess(jobs *Jobs) error {
+	acc.Address, err := stringPreProcess(acc.Address, jobs)
+	return err
+}
+
+func (acc *Account) Execute(do *definitions.Do) (*JobResults, error) {
+	var result &JobResults
+	var err error
+
+	// Set the Account in the Package & Announce
+	do.Package.Account = acc.Address
+	log.WithField("=>", do.Package.Account).Info("Setting Account")
+
+	// Set the public key from eris-keys
+	keys.DaemonAddr = do.Signer
+	log.WithField("from", keys.DaemonAddr).Info("Getting Public Key")
+	do.PublicKey, err = keys.Call("pub", map[string]string{"addr": do.Package.Account, "name": ""})
+	if _, ok := err.(keys.ErrConnectionRefused); ok {
+		keys.ExitConnectErr(err)
+	}
+
+	if err != nil {
+		return util.KeysErrorHandler(do, err)
+	}
+
+	// Set result and return
+	result.JobResult = account.Address
+	return result, nil
+}
+
 type Set struct {
 	// (Required) value which should be saved along with the jobName (which will be the key)
 	// this is useful to set variables which can be used throughout the epm definition file.
@@ -20,3 +51,14 @@ type Set struct {
 	Value string `mapstructure:"val" json:"val" yaml:"val" toml:"val"`
 }
 
+func (set *Set) PreProcess(jobs *Jobs) error {
+	set.Value, err := util.StringPreProcess(acc.Address, jobs)
+	return err
+}
+
+func (set *Set) Execute(do *definitions.Do) (*JobResults, error) {
+	var result &JobResults
+	log.WithField("=>", set.Value).Info("Setting Variable")
+	result.JobResult = set.Value
+	return result, nil
+}
