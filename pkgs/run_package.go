@@ -8,6 +8,9 @@ import (
 	"github.com/eris-ltd/eris-cli/pkgs/jobs"
 	"github.com/eris-ltd/eris-cli/services"
 	"github.com/eris-ltd/eris-cli/util"
+
+	"github.com/eris-ltd/eris-db/client"
+	"github.com/eris-ltd/eris-db/keys"
 )
 
 func RunPackage(do *definitions.Do) error {
@@ -34,6 +37,12 @@ func RunPackage(do *definitions.Do) error {
 	if err != nil {
 		return err
 	}
+	loadedJobs.NodeClient = client.NewErisNodeClient(do.ChainName)
+	loadedJobs.KeyClient = keys.NewErisKeyClient(do.Signer)
+	loadedJobs.PublicKey = do.PublicKey
+	loadedJobs.DefaultAddr = do.DefaultAddr
+	loadedJobs.DefaultOutput = do.DefaultOutput
+	loadedJobs.DefaultSets = do.DefaultSets
 
 	if do.LocalCompiler {
 		if err := bootCompiler(); err != nil {

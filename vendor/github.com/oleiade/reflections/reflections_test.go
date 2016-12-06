@@ -6,8 +6,8 @@ package reflections
 
 import (
 	"github.com/stretchr/testify/assert"
-	"testing"
 	"reflect"
+	"testing"
 )
 
 type TestStruct struct {

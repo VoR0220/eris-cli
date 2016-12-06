@@ -1,11 +1,11 @@
 package interpret
 
 const (
-	HashLength    = 32	
+	HashLength = 32
 )
 
 type (
-	Hash    [HashLength]byte
+	Hash [HashLength]byte
 )
 
 func BytesToHash(b []byte) Hash {

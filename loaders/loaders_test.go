@@ -2,8 +2,8 @@ package loaders
 
 import (
 	"fmt"
-	"os"
 	"io/ioutil"
+	"os"
 	"path"
 	"path/filepath"
 	"reflect"
@@ -310,7 +310,7 @@ func TestLoadDataDefinition(t *testing.T) {
 func TestLoadUtilJobsSimple(t *testing.T) {
 	const (
 		filename = "./epm.yaml"
-		jobs = `
+		jobs     = `
 jobs:
 
 - name: setStorageBase
@@ -346,7 +346,7 @@ jobs:
 func TestLoadContractJobsSimple(t *testing.T) {
 	const (
 		filename = "./epm.yaml"
-		jobs = `
+		jobs     = `
 jobs:
 
 - name: deploySomething
@@ -387,7 +387,7 @@ jobs:
 		{`DeploySource`, output.Jobs[0].Deploy.Source, "1234567890"},
 		{`DeployContract`, output.Jobs[0].Deploy.Contract, "storage.sol"},
 		{`DeployInstance`, output.Jobs[0].Deploy.Instance, "C"},
-		{`DeployLibs`, output.Jobs[0].Deploy.Libraries, []string{"someLib:0x1234567890","anotherLib:0x1234567890"}},
+		{`DeployLibs`, output.Jobs[0].Deploy.Libraries, []string{"someLib:0x1234567890", "anotherLib:0x1234567890"}},
 		{`DeployData`, output.Jobs[0].Deploy.Data, []interface{}{1, 2, 3}},
 		{`DeployAmount`, output.Jobs[0].Deploy.Amount, "1"},
 		{`DeployFee`, output.Jobs[0].Deploy.Fee, "1"},
@@ -412,7 +412,7 @@ jobs:
 func TestLoadTestJobsSimple(t *testing.T) {
 	const (
 		filename = "./epm.yaml"
-		jobs = `
+		jobs     = `
 jobs:
 
 - name: querySomething
@@ -480,7 +480,7 @@ jobs:
 func TestLoadTransactJobsSimple(t *testing.T) {
 	const (
 		filename = "./epm.yaml"
-		jobs = `
+		jobs     = `
 jobs:
 
 - name: sendSomething
@@ -542,7 +542,7 @@ jobs:
 		{`SendSource`, output.Jobs[0].Send.Source, "1234567890"},
 		{`SendDestination`, output.Jobs[0].Send.Destination, "$deploySomething"},
 		{`SendAmount`, output.Jobs[0].Send.Amount, "1"},
-		{`SendNonce`, output.Jobs[0].Send.Nonce, "3"},		
+		{`SendNonce`, output.Jobs[0].Send.Nonce, "3"},
 		{`RegisterNameJobName`, output.Jobs[1].Name, "regName"},
 		{`RegisterNameName`, output.Jobs[1].RegisterName.Name, "fred"},
 		{`RegisterNameSource`, output.Jobs[1].RegisterName.Source, "1234567890"},

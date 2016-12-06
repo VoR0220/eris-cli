@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/eris-ltd/eris-cli/pkgs/jobs"
 	"github.com/eris-ltd/eris-cli/log"
+	"github.com/eris-ltd/eris-cli/pkgs/jobs"
 
 	"github.com/spf13/viper"
 )

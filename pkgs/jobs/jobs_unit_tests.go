@@ -1,10 +1,10 @@
 package jobs
 
 import (
-	"testing"
-	"os"
 	"fmt"
 	"io/ioutil"
+	"os"
+	"testing"
 
 	"github.com/eris-ltd/eris-cli/log"
 
@@ -48,17 +48,17 @@ func TestMain(m *testing.M) {
 }
 
 //copy of loaders for ease of testing
-func loadJobsForTesting(config string) (*Jobs, error){
+func loadJobsForTesting(config string) (*Jobs, error) {
 	log.Info("Loading Eris Run File...")
 	var jobset = EmptyJobs()
 	var epmJobs = viper.New()
-	
+
 	err := ioutil.WriteFile("epm.yaml", []byte(config), 0644)
 	defer os.Remove("epm.yaml")
 	if err != nil {
 		return nil, fmt.Errorf("cannot write config file: %v", err)
 	}
-	
+
 	epmJobs.AddConfigPath(".")
 	epmJobs.SetConfigName("epm")
 
@@ -75,7 +75,14 @@ func loadJobsForTesting(config string) (*Jobs, error){
 	return jobset, nil
 }
 
-// Test duplicates
+// To test:
+// Duplicates
+// Preprocessing
+// Preprocessing utilities
+// General jobs
+// Compile job
+// Postprocessing
+// Contextual Job Results
 
 func addJobResultsToMap(jobs *Jobs) (*Jobs, error) {
 	for i, job := range jobs {
@@ -90,4 +97,8 @@ func TestPreProcessingStrings(t *testing.T) {
 	if err != nil {
 		t.Fatalf("could not load jobs: %v", err)
 	}
+}
+
+func TestJobDuplicates(t *testing.T) {
+
 }

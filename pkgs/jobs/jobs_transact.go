@@ -406,28 +406,11 @@ func (unbond *Unbond) PreProcess(do *definitions.Do) err error {
 }
 
 func (unbond *Unbond) Execute(do *definitions.Do) (*definitions.JobResults, error) {
-	// Don't use pubKey if account override
-	var oldKey string
-	if unbond.Source != do.Package.Account {
-		oldKey = do.PublicKey
-		do.PublicKey = ""
-	}
-
 	// Formulate tx
 	log.WithFields(log.Fields{
 		"account": unbond.Source,
 		"height":  unbond.Height,
 	}).Info("Unbond Transaction")
-
-	tx, err := core.Unbond(unbond.Source, unbond.Height)
-	if err != nil {
-		return util.MintChainErrorHandler(do, err)
-	}
-
-	// Don't use pubKey if Source override
-	if unbond.Source != do.Package.Source {
-		do.PublicKey = oldKey
-	}
 
 	// Sign, broadcast, display
 	return txFinalize(do, tx)
@@ -456,28 +439,11 @@ func (rebond *Rebond) PreProcess(jobs *Jobs) error {
 
 func (rebond *Rebond) Execute(do *definitions.Do) (*JobResults, error) {
 
-	// Don't use pubKey if account override
-	var oldKey string
-	if rebond.Source != do.Package.Account {
-		oldKey = do.PublicKey
-		do.PublicKey = ""
-	}
-
 	// Formulate tx
 	log.WithFields(log.Fields{
 		"account": rebond.Source,
 		"height":  rebond.Height,
 	}).Info("Rebond Transaction")
-
-	tx, err := core.Rebond(rebond.Source, rebond.Height)
-	if err != nil {
-		return util.MintChainErrorHandler(do, err)
-	}
-
-	// Don't use pubKey if Source override
-	if rebond.Source != do.Package.Account {
-		do.PublicKey = oldKey
-	}
 
 	// Sign, broadcast, display
 	return txFinalize(do, tx)

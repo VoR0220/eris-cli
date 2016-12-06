@@ -31,7 +31,7 @@ type Package struct {
 	SkipABIPath       bool
 
 	// from epm
-	Account   string
+	Account string
 }
 
 func BlankPackageDefinition() *PackageDefinition {

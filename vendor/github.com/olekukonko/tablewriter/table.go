@@ -118,7 +118,7 @@ func (t *Table) SetFooter(keys []string) {
 }
 
 // Turn header autoformatting on/off. Default is on (true).
-func (t* Table) SetAutoFormatHeaders(auto bool) {
+func (t *Table) SetAutoFormatHeaders(auto bool) {
 	t.autoFmt = auto
 }
 

@@ -12,11 +12,6 @@ type JobsCommon interface {
 	Execute(*Do) (*JobResults, error)
 }
 
-/*type ContextBasedResults interface {
-	ResultContext() string
-	GetResultOnCurrentContext() string
-}*/
-
 type Job struct {
 	// Name of the job
 	Name string `mapstructure:"name" json:"name" yaml:"name" toml:"name"`

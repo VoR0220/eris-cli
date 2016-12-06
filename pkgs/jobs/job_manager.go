@@ -7,10 +7,19 @@ import (
 	"github.com/eris-ltd/eris-cli/definitions"
 	"github.com/eris-ltd/eris-cli/log"
 	"github.com/eris-ltd/eris-cli/util"
+
+	"github.com/eris-ltd/eris-db/keys"
+	"github.com/eris-ltd/eris-db/client"
 )
 
 type Jobs struct {
 	Account   string
+	NodeClient *client.ErisNodeClient
+	KeyClient  *keys.ErisKeyClient
+	PublicKey string
+	DefaultAddr string
+	DefaultOutput string
+	DefaultSets []string
 	Jobs      []*Job `mapstructure:"jobs" json:"jobs" yaml:"jobs" toml:"jobs"`
 	JobMap    map[string]JobResults
 }
@@ -33,12 +42,22 @@ func (jobs *Jobs) RunJobs(do *definitions.Do) (string, error) {
 			continue
 		} else if found && overwrite {
 			//overwrite the name
+			jobs.JobMap[jobNames[at]] = nil
 			jobNames = append(jobNames[:at], jobNames[at+1:]...)
 		}
+
 		jobNames = append(jobNames, job.Name)
 		jobs.announce(job, i)
-		job.Preprocess(jobs)
-		job.Execute()
+		
+		err := job.Preprocess(jobs)
+		if err != nil {
+			return "", err
+		}
+		results, err := job.Execute(jobs)
+		if err != nil {
+			return "", err
+		}
+		jobs.JobMap[job.Name] = results
 	}
 }
 
@@ -196,10 +215,10 @@ func (jobs *Jobs) announce(job JobsCommon, index int) {
 func (jobs *Jobs) defaultAddrJob(do *definitions.Do) {
 	oldJobs := jobs
 
-	newJob := &definitions.Jobs{
-		JobName: "defaultAddr",
-		Job: &definitions.Job{
-			Account: &definitions.Account{
+	newJob := &Jobs{
+		Jobs: []&Job{
+			Name: "defaultAddr",
+			Account: &Account{
 				Address: do.DefaultAddr,
 			},
 		},
@@ -216,10 +235,10 @@ func (jobs *Jobs) defaultSetJobs() {
 	for _, setr := range do.DefaultSets {
 		blowdUp := strings.Split(setr, "=")
 		if blowdUp[0] != "" {
-			newJobs = append(newJobs, &definitions.Jobs{
-				JobName: blowdUp[0],
-				Job: &definitions.Job{
-					Set: &definitions.Set{
+			newJobs = append(newJobs, &Jobs{
+				Job: &Job{
+					Name: blowdUp[0],
+					Set: &dSet{
 						Value: blowdUp[1],
 					},
 				},
