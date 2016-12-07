@@ -14,6 +14,11 @@ import (
 	"github.com/eris-ltd/eris-cli/util"
 )
 
+type Variable struct {
+	Name  string
+	Value string
+}
+
 func ReadAbiFormulateCall(abiLocation string, funcName string, args []string, do *definitions.Do) ([]byte, error) {
 	abiSpecBytes, err := util.ReadAbi(do.ABIPath, abiLocation)
 	if err != nil {
@@ -28,7 +33,7 @@ func ReadAbiFormulateCall(abiLocation string, funcName string, args []string, do
 	return Packer(abiSpecBytes, funcName, args...)
 }
 
-func ReadAndDecodeContractReturn(abiLocation, funcName string, resultRaw []byte, do *definitions.Do) ([]*definitions.Variable, error) {
+func ReadAndDecodeContractReturn(abiLocation, funcName string, resultRaw []byte, do *definitions.Do) ([]*Variable, error) {
 	abiSpecBytes, err := util.ReadAbi(do.ABIPath, abiLocation)
 	if err != nil {
 		return nil, err
@@ -290,11 +295,11 @@ func packInterfaceValue(typ Type, val string) (interface{}, error) {
 	}
 }
 
-func Unpacker(abiData, name string, data []byte) ([]*definitions.Variable, error) {
+func Unpacker(abiData, name string, data []byte) ([]*Variable, error) {
 
 	abiSpec, err := MakeAbi(abiData)
 	if err != nil {
-		return []*definitions.Variable{}, err
+		return []*Variable{}, err
 	}
 
 	numArgs, err := numReturns(abiSpec, name)
@@ -308,14 +313,14 @@ func Unpacker(abiData, name string, data []byte) ([]*definitions.Variable, error
 		var unpacked interface{}
 		err = abiSpec.Unpack(&unpacked, name, data)
 		if err != nil {
-			return []*definitions.Variable{}, err
+			return []*Variable{}, err
 		}
 		return formatUnpackedReturn(abiSpec, name, unpacked)
 	} else {
 		var unpacked []interface{}
 		err = abiSpec.Unpack(&unpacked, name, data)
 		if err != nil {
-			return []*definitions.Variable{}, err
+			return []*Variable{}, err
 		}
 		return formatUnpackedReturn(abiSpec, name, unpacked)
 	}
@@ -340,8 +345,8 @@ func numReturns(abiSpec ABI, methodName string) (uint, error) {
 	}
 }
 
-func formatUnpackedReturn(abiSpec ABI, methodName string, values ...interface{}) ([]*definitions.Variable, error) {
-	var returnVars []*definitions.Variable
+func formatUnpackedReturn(abiSpec ABI, methodName string, values ...interface{}) ([]*Variable, error) {
+	var returnVars []*Variable
 	method, exist := abiSpec.Methods[methodName]
 	if !exist {
 		return nil, fmt.Errorf("method '%s' not found", methodName)
@@ -361,7 +366,7 @@ func formatUnpackedReturn(abiSpec ABI, methodName string, values ...interface{})
 				nameNum := i
 				name = strconv.Itoa(nameNum)
 			}
-			returnVar := &definitions.Variable{
+			returnVar := &Variable{
 				Name:  name,
 				Value: arg,
 			}
@@ -381,7 +386,7 @@ func formatUnpackedReturn(abiSpec ABI, methodName string, values ...interface{})
 			nameNum := 0
 			name = strconv.Itoa(nameNum)
 		}
-		returnVar := &definitions.Variable{
+		returnVar := &Variable{
 			Name:  name,
 			Value: arg,
 		}

@@ -43,6 +43,10 @@ func RunPackage(do *definitions.Do) error {
 	loadedJobs.DefaultAddr = do.DefaultAddr
 	loadedJobs.DefaultOutput = do.DefaultOutput
 	loadedJobs.DefaultSets = do.DefaultSets
+	loadedJobs.Overwrite = do.Overwrite
+	loadedJobs.DefaultAmount = do.DefaultAmount
+	loadedJobs.DefaultFee = do.DefaultFee
+	loadedJobs.DefaultGas = do.DefaultGas
 
 	if do.LocalCompiler {
 		if err := bootCompiler(); err != nil {

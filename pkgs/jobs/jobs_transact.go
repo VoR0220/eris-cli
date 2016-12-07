@@ -1,10 +1,10 @@
 package jobs
 
 import (
-	"encoding/csv"
+	//"encoding/csv"
 	"fmt"
-	"io"
-	"os"
+	//"io"
+	//"os"
 
 	"github.com/eris-ltd/eris-cli/definitions"
 	"github.com/eris-ltd/eris-cli/log"
@@ -36,8 +36,7 @@ func (send *Send) PreProcess(jobs *Jobs) error {
 	send.Source = useDefault(send.Source, jobs.Package.Account)
 }
 
-func (send *Send) Execute(do *definitions.Do) (*JobResults, error) {
-
+func (send *Send) Execute(jobs *Jobs) (*JobResults, error) {
 
 	// Formulate tx
 	log.WithFields(log.Fields{
@@ -46,15 +45,15 @@ func (send *Send) Execute(do *definitions.Do) (*JobResults, error) {
 		"amount":      send.Amount,
 	}).Info("Sending Transaction")
 
-	erisNodeClient := client.NewErisNodeClient(do.ChainName)
-	erisKeyClient := keys.NewErisKeyClient(do.Signer)
-	tx, err := core.Send(erisNodeClient, erisKeyClient, do.PublicKey, send.Source, send.Destination, send.Amount, send.Nonce)
+	erisNodeClient := client.NewErisNodeClient(jobs.ChainName)
+	erisKeyClient := keys.NewErisKeyClient(jobs.Signer)
+	tx, err := core.Send(erisNodeClient, erisKeyClient, jobs.PublicKey, send.Source, send.Destination, send.Amount, send.Nonce)
 	if err != nil {
-		return util.MintChainErrorHandler(do, err)
+		return util.MintChainErrorHandler(jobs, err)
 	}
 
 	// Sign, broadcast, display
-	return txFinalize(do, tx)
+	return txFinalize(jobs, tx)
 }
 
 type RegisterName struct {
@@ -76,7 +75,7 @@ type RegisterName struct {
 	Nonce string `mapstructure:"nonce" json:"nonce" yaml:"nonce" toml:"nonce"`
 }
 
-/*func (name *RegisterName) PreProcess(do *definitions.Do) error {
+/*func (name *RegisterName) PreProcess(jobs *Jobs) error {
 	name.DataFile, err := util.StringPreProcess(name.DataFile, do)
 	if err != nil {
 		return err
@@ -91,9 +90,9 @@ type RegisterName struct {
 	}
 
 	// Set Defaults
-	name.Source = useDefault(name.Source, do.Package.Account)
-	name.Fee = useDefault(name.Fee, do.DefaultFee)
-	name.Amount = useDefault(name.Amount, do.DefaultAmount)
+	name.Source = useDefault(name.Source, jobs.Package.Account)
+	name.Fee = useDefault(name.Fee, jobs.DefaultFee)
+	name.Amount = useDefault(name.Amount, jobs.DefaultAmount)
 	// If a data file is given it should be in csv format and
 	// it will be read first. Once the file is parsed and sent
 	// to the chain then a single nameRegTx will be sent if that
@@ -132,7 +131,7 @@ type RegisterName struct {
 	}
 }
 
-func RegisterNameJob(name *definitions.RegisterName, do *definitions.Do) (string, error) {
+func RegisterNameJob(name *definitions.RegisterName, jobs *Jobs) (string, error) {
 
 
 
@@ -202,7 +201,7 @@ func RegisterNameJob(name *definitions.RegisterName, do *definitions.Do) (string
 }
 
 // Runs an individual nametx.
-func registerNameTx(name *definitions.RegisterName, do *definitions.Do) (string, error) {
+func registerNameTx(name *definitions.RegisterName, jobs *Jobs) (string, error) {
 	// Process Variables
 	name.Source, _ = util.PreProcess(name.Source, do)
 	name.Name, _ = util.PreProcess(name.Name, do)
@@ -211,9 +210,9 @@ func registerNameTx(name *definitions.RegisterName, do *definitions.Do) (string,
 
 	// Don't use pubKey if account override
 	var oldKey string
-	if name.Source != do.Package.Account {
-		oldKey = do.PublicKey
-		do.PublicKey = ""
+	if name.Source != jobs.Package.Account {
+		oldKey = jobs.PublicKey
+		jobs.PublicKey = ""
 	}
 
 	// Formulate tx
@@ -223,20 +222,20 @@ func registerNameTx(name *definitions.RegisterName, do *definitions.Do) (string,
 		"amount": name.Amount,
 	}).Info("NameReg Transaction")
 
-	erisNodeClient := client.NewErisNodeClient(do.ChainName)
-	erisKeyClient := keys.NewErisKeyClient(do.Signer)
-	tx, err := core.Name(erisNodeClient, erisKeyClient, do.PublicKey, name.Source, name.Amount, name.Nonce, name.Fee, name.Name, name.Data)
+	erisNodeClient := client.NewErisNodeClient(jobs.ChainName)
+	erisKeyClient := keys.NewErisKeyClient(jobs.Signer)
+	tx, err := core.Name(erisNodeClient, erisKeyClient, jobs.PublicKey, name.Source, name.Amount, name.Nonce, name.Fee, name.Name, name.Data)
 	if err != nil {
-		return util.MintChainErrorHandler(do, err)
+		return util.MintChainErrorHandler(jobs, err)
 	}
 
 	// Don't use pubKey if account override
-	if name.Source != do.Package.Account {
-		do.PublicKey = oldKey
+	if name.Source != jobs.Package.Account {
+		jobs.PublicKey = oldKey
 	}
 
 	// Sign, broadcast, display
-	return txFinalize(do, tx)
+	return txFinalize(jobs, tx)
 }
 */
 
@@ -260,36 +259,36 @@ type Permission struct {
 	Nonce string `mapstructure:"nonce" json:"nonce" yaml:"nonce" toml:"nonce"`
 }
 
-func (perm *Permission) PreProcess(do *definitions.Do) err error {
-	perm.Source, err = util.StringPreProcess(perm.Source, do)
+func (perm *Permission) PreProcess(jobs *Jobs) (err error) {
+	perm.Source, err = util.StringPreProcess(perm.Source, jobs)
 	if err != nil {
 		return err
 	}
-	perm.Action, err = util.StringPreProcess(perm.Action, do)
+	perm.Action, err = util.StringPreProcess(perm.Action, jobs)
 	if err != nil {
 		return err
 	}
-	perm.PermissionFlag, err = util.StringPreProcess(perm.PermissionFlag, do)
+	perm.PermissionFlag, err = util.StringPreProcess(perm.PermissionFlag, jobs)
 	if err != nil {
 		return err
 	}
-	perm.Value, err = util.StringPreProcess(perm.Value, do)
+	perm.Value, err = util.StringPreProcess(perm.Value, jobs)
 	if err != nil {
 		return err
 	}
-	perm.Target, err = util.StringPreProcess(perm.Target, do)
+	perm.Target, err = util.StringPreProcess(perm.Target, jobs)
 	if err != nil {
 		return err
 	}
-	perm.Role, err = util.StringPreProcess(perm.Role, do)
+	perm.Role, err = util.StringPreProcess(perm.Role, jobs)
 	if err != nil {
 		return err
 	}
 	// Set defaults
-	perm.Source = useDefault(perm.Source, do.Package.Account)
+	perm.Source = useDefault(perm.Source, jobs.Account)
 }
 
-func (perm *Permission) Execute(do *definitions.Do) (*definitions.JobResults, error) {
+func (perm *Permission) Execute(jobs *Jobs) (*definitions.JobResults, error) {
 	log.Debug("Target: ", perm.Target)
 	log.Debug("Marmots Deny: ", perm.Role)
 	log.Debug("Action: ", perm.Action)
@@ -308,31 +307,31 @@ func (perm *Permission) Execute(do *definitions.Do) (*definitions.JobResults, er
 
 	// Don't use pubKey if account override
 	var oldKey string
-	if perm.Source != do.Package.Account {
-		oldKey = do.PublicKey
-		do.PublicKey = ""
+	if perm.Source != jobs.Package.Account {
+		oldKey = jobs.PublicKey
+		jobs.PublicKey = ""
 	}
 
 	// Formulate tx
 	arg := fmt.Sprintf("%s:%s", args[0], args[1])
 	log.WithField(perm.Action, arg).Info("Setting Permissions")
 
-	erisNodeClient := client.NewErisNodeClient(do.ChainName)
-	erisKeyClient := keys.NewErisKeyClient(do.Signer)
-	tx, err := core.Permissions(erisNodeClient, erisKeyClient, do.PublicKey, perm.Source, perm.Nonce, perm.Action, args)
+	erisNodeClient := client.NewErisNodeClient(jobs.ChainName)
+	erisKeyClient := keys.NewErisKeyClient(jobs.Signer)
+	tx, err := core.Permissions(erisNodeClient, erisKeyClient, jobs.PublicKey, perm.Source, perm.Nonce, perm.Action, args)
 	if err != nil {
-		return util.MintChainErrorHandler(do, err)
+		return util.MintChainErrorHandler(jobs, err)
 	}
 
 	log.Debug("What are the args returned in transaction: ", tx.PermArgs)
 
 	// Don't use pubKey if account override
-	if perm.Source != do.Package.Account {
-		do.PublicKey = oldKey
+	if perm.Source != jobs.Package.Account {
+		jobs.PublicKey = oldKey
 	}
 
 	// Sign, broadcast, display
-	return txFinalize(do, tx)
+	return txFinalize(jobs, tx)
 }
 
 type Bond struct {
@@ -347,7 +346,7 @@ type Bond struct {
 	Nonce string `mapstructure:"nonce" json:"nonce" yaml:"nonce" toml:"nonce"`
 }
 
-func (bond *BondJob) PreProcess(do *definitions.Do) err error {
+func (bond *Bond) PreProcess(jobs *Jobs) (err error) {
 	// Process Variables
 	bond.Source, err = util.StringPreProcess(bond.Source, do)
 	if err != nil {
@@ -362,26 +361,26 @@ func (bond *BondJob) PreProcess(do *definitions.Do) err error {
 		return err
 	}
 	// Use Defaults
-	bond.Source = useDefault(bond.Source, do.Package.Account)
-	do.PublicKey = useDefault(do.PublicKey, bond.PublicKey)
+	bond.Source = useDefault(bond.Source, jobs.Package.Account)
+	jobs.PublicKey = useDefault(jobs.PublicKey, bond.PublicKey)
 }
 
-func (bond *BondJob) Execute(do *definitions.Do) (*definitions.JobResults, error) {
+func (bond *Bond) Execute(jobs *Jobs) (*JobResults, error) {
 	// Formulate tx
 	log.WithFields(log.Fields{
-		"public key": do.PublicKey,
+		"public key": jobs.PublicKey,
 		"amount":     bond.Amount,
 	}).Infof("Bond Transaction")
 
-	erisNodeClient := client.NewErisNodeClient(do.ChainName)
-	erisKeyClient := keys.NewErisKeyClient(do.Signer)
-	tx, err := core.Bond(erisNodeClient, erisKeyClient, do.PublicKey, bond.Account, bond.Amount, bond.Nonce)
+	erisNodeClient := client.NewErisNodeClient(jobs.ChainName)
+	erisKeyClient := keys.NewErisKeyClient(jobs.Signer)
+	tx, err := core.Bond(erisNodeClient, erisKeyClient, jobs.PublicKey, bond.Account, bond.Amount, bond.Nonce)
 	if err != nil {
-		return util.MintChainErrorHandler(do, err)
+		return util.MintChainErrorHandler(jobs, err)
 	}
 
 	// Sign, broadcast, display
-	return txFinalize(do, tx)
+	return txFinalize(jobs, tx)
 }
 
 type Unbond struct {
@@ -392,7 +391,7 @@ type Unbond struct {
 	Height string `mapstructure:"height" json:"height" yaml:"height" toml:"height"`
 }
 
-func (unbond *Unbond) PreProcess(do *definitions.Do) err error {
+func (unbond *Unbond) PreProcess(jobs *Jobs) (err error) {
 	unbond.Source, err = util.PreProcess(unbond.Source, do)
 	if err != nil {
 		return err
@@ -402,10 +401,10 @@ func (unbond *Unbond) PreProcess(do *definitions.Do) err error {
 		return err
 	}
 	// Use defaults
-	unbond.Source = useDefault(unbond.Source, do.Package.Account)
+	unbond.Source = useDefault(unbond.Source, jobs.Package.Account)
 }
 
-func (unbond *Unbond) Execute(do *definitions.Do) (*definitions.JobResults, error) {
+func (unbond *Unbond) Execute(jobs *Jobs) (*JobResults, error) {
 	// Formulate tx
 	log.WithFields(log.Fields{
 		"account": unbond.Source,
@@ -413,7 +412,7 @@ func (unbond *Unbond) Execute(do *definitions.Do) (*definitions.JobResults, erro
 	}).Info("Unbond Transaction")
 
 	// Sign, broadcast, display
-	return txFinalize(do, tx)
+	return txFinalize(jobs, tx)
 }
 
 type Rebond struct {
@@ -434,10 +433,10 @@ func (rebond *Rebond) PreProcess(jobs *Jobs) error {
 	}
 
 	// Use defaults
-	rebond.Source = useDefault(rebond.Source, do.Package.Account)
+	rebond.Source = useDefault(rebond.Source, jobs.Account)
 }
 
-func (rebond *Rebond) Execute(do *definitions.Do) (*JobResults, error) {
+func (rebond *Rebond) Execute(jobs *Jobs) (*JobResults, error) {
 
 	// Formulate tx
 	log.WithFields(log.Fields{
@@ -446,17 +445,17 @@ func (rebond *Rebond) Execute(do *definitions.Do) (*JobResults, error) {
 	}).Info("Rebond Transaction")
 
 	// Sign, broadcast, display
-	return txFinalize(do, tx)
+	return txFinalize(jobs, tx)
 }
 
-func txFinalize(do *definitions.Do, tx interface{}) (*definitions.JobResults, error) {
-	var result &JobResults
+func txFinalize(jobs *Jobs, tx interface{}) (*JobResults, error) {
+	var result *JobResults
 
-	erisNodeClient := client.NewErisNodeClient(do.ChainName)
-	erisKeyClient := keys.NewErisKeyClient(do.Signer)
-	res, err := core.SignAndBroadcast(do.ChainID, erisNodeClient, erisKeyClient, tx.(txs.Tx), true, true, true)
+	erisNodeClient := client.NewErisNodeClient(jobs.ChainName)
+	erisKeyClient := keys.NewErisKeyClient(jobs.Signer)
+	res, err := core.SignAndBroadcast(jobs.ChainID, erisNodeClient, erisKeyClient, tx.(txs.Tx), true, true, true)
 	if err != nil {
-		return util.MintChainErrorHandler(do, err)
+		return util.MintChainErrorHandler(jobs, err)
 	}
 
 	if err := util.ReadTxSignAndBroadcast(res, err); err != nil {

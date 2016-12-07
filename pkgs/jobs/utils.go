@@ -1,3 +1,4 @@
+package jobs
 
 import (
 	"fmt"
@@ -7,7 +8,7 @@ import (
 func stringPreProcess(val string, jobs *Jobs) (string, error) {
 	switch {
 	/*case strings.HasPrefix(val, "$block"):
-		return replaceBlockVariable(val, do)*/
+	return replaceBlockVariable(val, do)*/
 	case strings.HasPrefix(val, "$"):
 		key := strings.TrimPrefix(val, "$")
 		if results, ok := jobs.JobMap[key]; ok {
@@ -20,12 +21,12 @@ func stringPreProcess(val string, jobs *Jobs) (string, error) {
 			return results.JobResult, nil
 		}
 		return "", fmt.Errorf("Could not find results for job %v", key)
-	default : 
+	default:
 		return val, nil
 	}
 }
 
-func replaceBlockVariable(toReplace string, do *definitions.Do) (string, error) {
+func replaceBlockVariable(toReplace string, jobs *Jobs) (string, error) {
 	log.WithFields(log.Fields{
 		"chain": do.ChainName,
 		"var":   toReplace,
@@ -78,7 +79,7 @@ func replaceBlockVariable(toReplace string, do *definitions.Do) (string, error) 
 	return toReplace, nil
 }
 
-func PreProcessInputData(function string, data interface{}, do *definitions.Do, constructor bool) (string, []string, error) {
+func PreProcessInputData(function string, data interface{}, jobs *Jobs, constructor bool) (string, []string, error) {
 	var callDataArray []string
 	var callArray []string
 	if function == "" && !constructor {
@@ -141,7 +142,7 @@ func PreProcessInputData(function string, data interface{}, do *definitions.Do, 
 	return function, callDataArray, nil
 }
 
-func SplitAndPreProcessStringPairs(value string, operator string, do *definitions.Do) (string, error) {
+func SplitAndPreProcessStringPairs(value string, operator string, jobs *Jobs) (string, error) {
 	if strings.HasPrefix(value, "$") {
 		return StringPreProcess(value, do)
 	} else if value == "" {
@@ -155,16 +156,15 @@ func SplitAndPreProcessStringPairs(value string, operator string, do *definition
 		case ":":
 			log.Info("Preprocessing libraries")
 			strings.ToLower(pairs[1])
-		default : 
+		default:
 			return "", fmt.Errorf("Got invalid operator: %v", operator)
-		}	
+		}
 		pairs[0] = StringPreProcess(pairs[0], do)
 		pairs[1] = StringPreProcess(pairs[1], do)
 		result = strings.Join(pairs, operator)
 		return result, nil
 	}
 }
-
 
 func GetReturnValue(vars []*definitions.Variable) string {
 	var result []string
@@ -180,6 +180,29 @@ func GetReturnValue(vars []*definitions.Variable) string {
 		return vars[0].Value
 	} else {
 		return ""
+	}
+}
+
+func accountOverride(job JobsCommon, jobs *Jobs) string {
+	var oldKey string
+	switch jobType := jobType.(type) {
+	case *Send, *BondJob, *Call, *Deploy, *Rebond, *Unbond, *Permission, *Name:
+		// Don't use pubKey if account override
+		if jobType.Source != jobs.Account {
+			oldKey = do.PublicKey
+			jobs.PublicKey = ""
+		}
+	}
+	return oldKey
+}
+
+func accountUnoverride(job JobsCommon, jobs *Jobs, oldKey string) {
+	switch jobType := jobType.(type) {
+	case *Send, *BondJob, *Call, *Deploy, *Rebond, *Unbond, *Permission, *Name:
+		// Don't use pubKey if account override
+		if job.Source != jobs.Account {
+			jobs.PublicKey = oldKey
+		}
 	}
 }
 

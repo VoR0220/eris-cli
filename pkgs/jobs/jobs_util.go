@@ -12,24 +12,22 @@ type Account struct {
 	Address string `mapstructure:"address" json:"address" yaml:"address" toml:"address"`
 }
 
-
-func (acc *Account) PreProcess(jobs *Jobs) error {
-	acc.Address, err := stringPreProcess(acc.Address, jobs)
-	return err
+func (acc *Account) PreProcess(jobs *Jobs) (err error) {
+	acc.Address, err = stringPreProcess(acc.Address, jobs)
 }
 
-func (acc *Account) Execute(do *definitions.Do) (*JobResults, error) {
-	var result &JobResults
+func (acc *Account) Execute(jobs *Jobs) (*JobResults, error) {
+	var result *JobResults
 	var err error
 
 	// Set the Account in the Package & Announce
-	do.Package.Account = acc.Address
-	log.WithField("=>", do.Package.Account).Info("Setting Account")
+	jobs.Account = acc.Address
+	log.WithField("=>", jobs.Package.Account).Info("Setting Account")
 
 	// Set the public key from eris-keys
-	keys.DaemonAddr = do.Signer
+	keys.DaemonAddr = jobs.Signer
 	log.WithField("from", keys.DaemonAddr).Info("Getting Public Key")
-	do.PublicKey, err = keys.Call("pub", map[string]string{"addr": do.Package.Account, "name": ""})
+	jobs.PublicKey, err = keys.Call("pub", map[string]string{"addr": jobs.Account, "name": ""})
 	if _, ok := err.(keys.ErrConnectionRefused); ok {
 		keys.ExitConnectErr(err)
 	}
@@ -51,13 +49,12 @@ type Set struct {
 	Value string `mapstructure:"val" json:"val" yaml:"val" toml:"val"`
 }
 
-func (set *Set) PreProcess(jobs *Jobs) error {
-	set.Value, err := util.StringPreProcess(acc.Address, jobs)
-	return err
+func (set *Set) PreProcess(jobs *Jobs) (err error) {
+	set.Value, err = util.StringPreProcess(acc.Address, jobs)
 }
 
-func (set *Set) Execute(do *definitions.Do) (*JobResults, error) {
-	var result &JobResults
+func (set *Set) Execute(jobs *Jobs) (*JobResults, error) {
+	var result *JobResults
 	log.WithField("=>", set.Value).Info("Setting Variable")
 	result.JobResult = set.Value
 	return result, nil

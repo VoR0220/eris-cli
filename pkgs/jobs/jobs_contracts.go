@@ -1,19 +1,19 @@
 package jobs
 
 import (
-	"encoding/hex"
+	//"encoding/hex"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/eris-ltd/eris-cli/pkgs/abi"
+	//"github.com/eris-ltd/eris-cli/pkgs/abi"
 
-	"github.com/eris-ltd/eris-cli/definitions"
 	"github.com/eris-ltd/eris-cli/log"
 	"github.com/eris-ltd/eris-cli/util"
 
+	compilers "github.com/eris-ltd/eris-compilers/perform"
 	"github.com/eris-ltd/eris-db/client"
 	"github.com/eris-ltd/eris-db/client/core"
 	"github.com/eris-ltd/eris-db/keys"
@@ -49,38 +49,38 @@ type Deploy struct {
 	Fee string `mapstructure:"fee" json:"fee" yaml:"fee" toml:"fee"`
 	// (Optional) amount of gas which should be sent along with the contract deployment transaction
 	Gas string `mapstructure:"gas" json:"gas" yaml:"gas" toml:"gas"`
-	// (Optional/Required if Contract not specified) Choose which compiler settings to use. Must be prefixed with $ and added to jobname. 
+	// (Optional/Required if Contract not specified) Choose which compiler settings to use. Must be prefixed with $ and added to jobname.
 	// If instance is specified, instance takes priority over compiler files and only instance will be deployed.
 	// If instance is not specified, all instances from contract and instances in files from compile will deploy.
 	// If contract is not specified, files of compiler will by default be deployed.
-	// Will not take gas estimates. 
+	// Will not take gas estimates.
 	Compiler string `mapstructure:"save" json:"save" yaml:"save" toml:"save"`
 	// (Optional, advanced only) nonce to use when eris-keys signs the transaction (do not use unless you
 	// know what you're doing)
 	Nonce string `mapstructure:"nonce" json:"nonce" yaml:"nonce" toml:"nonce"`
 }
 
-func (deploy *Deploy) PreProcess(do *definitions.Do) err error {
+func (deploy *Deploy) PreProcess(jobs *Jobs) (err error) {
 	// Preprocess variables
-	deploy.Source, err = util.StringPreProcess(deploy.Source, do)
-	deploy.Contract, err = util.StringPreProcess(deploy.Contract, do)
-	deploy.Instance, err = util.StringPreProcess(deploy.Instance, do)
-	deploy.Amount, err = util.PreProcess(deploy.Amount, do)
-	deploy.Nonce, err = util.PreProcess(deploy.Nonce, do)
-	deploy.Fee, err = util.PreProcess(deploy.Fee, do)
-	deploy.Gas, err = util.PreProcess(deploy.Gas, do)
+	deploy.Source, err = stringPreProcess(deploy.Source, jobs)
+	deploy.Contract, err = stringPreProcess(deploy.Contract, jobs)
+	deploy.Instance, err = stringPreProcess(deploy.Instance, jobs)
+	deploy.Amount, err = stringPreProcess(deploy.Amount, jobs)
+	deploy.Nonce, err = stringPreProcess(deploy.Nonce, jobs)
+	deploy.Fee, err = stringPreProcess(deploy.Fee, jobs)
+	deploy.Gas, err = stringPreProcess(deploy.Gas, jobs)
 
-	deploy.Libraries, err = util.PreProcessLibs(deploy.Libraries, do)
+	deploy.Libraries, err = SplitAndPreProcessStringPairs(deploy.Libraries, ":", jobs)
 
 	// Use defaults
-	deploy.Source = useDefault(deploy.Source, do.Package.Account)
+	deploy.Source = useDefault(deploy.Source, jobs.Account)
 	deploy.Instance = useDefault(deploy.Instance, contractName)
-	deploy.Amount = useDefault(deploy.Amount, do.DefaultAmount)
-	deploy.Fee = useDefault(deploy.Fee, do.DefaultFee)
-	deploy.Gas = useDefault(deploy.Gas, do.DefaultGas)
+	deploy.Amount = useDefault(deploy.Amount, jobs.DefaultAmount)
+	deploy.Fee = useDefault(deploy.Fee, jobs.DefaultFee)
+	deploy.Gas = useDefault(deploy.Gas, jobs.DefaultGas)
 
 	// Compile contracts before deploying
-	if deploy.Compiler != "" {
+	/*if deploy.Compiler != "" {
 		if !strings.HasPrefix(deploy.Compiler, "$"){
 			return fmt.Errorf("Could not use compiler %v. Could not link properly to pre-run job.", deploy.Compiler)
 		}
@@ -90,15 +90,15 @@ func (deploy *Deploy) PreProcess(do *definitions.Do) err error {
 	// mint packing
 
 	if deploy.Data != nil {
-		_, callDataArray, err = util.PreProcessInputData(compilersResponse.Objectname, deploy.Data, do, true)
-		packedBytes, err = abi.ReadAbiFormulateCall(compilersResponse.Objectname, "", callDataArray, do)
+		_, callDataArray, err = util.PreProcessInputData(compilersResponse.Objectname, deploy.Data, jobs, true)
+		packedBytes, err = abi.ReadAbiFormulateCall(compilersResponse.Objectname, "", callDataArray, jobs)
 		callData := hex.EncodeToString(packedBytes)
 		contractCode = contractCode + callData
-	}
+	}*/
 	return err
 }
 
-func (deploy *Deploy) Execute(do *definitions.Do) (*definitions.JobResults, error) {
+func (deploy *Deploy) Execute(jobs *Jobs) (JobResults, error) {
 	// trim the extension
 	contractName := strings.TrimSuffix(deploy.Contract, filepath.Ext(deploy.Contract))
 
@@ -107,20 +107,20 @@ func (deploy *Deploy) Execute(do *definitions.Do) (*definitions.JobResults, erro
 	if _, err := os.Stat(deploy.Contract); err == nil {
 		contractPath = deploy.Contract
 	} else {
-		contractPath = filepath.Join(do.ContractsPath, deploy.Contract)
+		contractPath = filepath.Join(jobs.ContractsPath, deploy.Contract)
 	}
 	log.WithField("=>", contractPath).Info("Contract path")
 
 	// use the proper compiler
-	if do.Compiler != "" {
-		log.WithField("=>", do.Compiler).Info("Setting compiler path")
+	if jobs.Compiler != "" {
+		log.WithField("=>", jobs.Compiler).Info("Setting compiler path")
 	}
 
 	// Don't use pubKey if account override
 	var oldKey string
-	if deploy.Source != do.Package.Account {
-		oldKey = do.PublicKey
-		do.PublicKey = ""
+	if deploy.Source != jobs.Package.Account {
+		oldKey = jobs.PublicKey
+		jobs.PublicKey = ""
 	}
 
 	// compile
@@ -131,18 +131,18 @@ func (deploy *Deploy) Execute(do *definitions.Do) (*definitions.JobResults, erro
 		if err != nil {
 			return "could not read binary file", err
 		}
-		tx, err := deployRaw(do, deploy, contractName, string(contractCode))
+		tx, err := deployRaw(jobs, deploy, contractName, string(contractCode))
 		if err != nil {
 			return "could not deploy binary contract", err
 		}
-		result, err := deployFinalize(do, tx)
+		result, err := deployFinalize(jobs, tx)
 		if err != nil {
 			return "", fmt.Errorf("Error finalizing contract deploy from path %s: %v", contractPath, err)
 		}
 		return result, err
 	} else {
 		// normal compilation/deploy sequence
-		resp, err := compilers.RequestCompile(do.Compiler, contractPath, false, deploy.Libraries)
+		resp, err := compilers.RequestCompile(jobs.Compiler, contractPath, false, deploy.Libraries)
 
 		if err != nil {
 			log.Errorln("Error compiling contracts: Compilers error:")
@@ -157,7 +157,7 @@ func (deploy *Deploy) Execute(do *definitions.Do) (*definitions.JobResults, erro
 			log.WithField("path", contractPath).Info("Deploying the only contract in file")
 			response := resp.Objects[0]
 			if response.Bytecode != "" {
-				result, err = deployContract(deploy, do, response, contractPath)
+				result, err = deployContract(deploy, jobs, response, contractPath)
 				if err != nil {
 					return "", err
 				}
@@ -169,7 +169,7 @@ func (deploy *Deploy) Execute(do *definitions.Do) (*definitions.JobResults, erro
 				if response.Bytecode == "" {
 					continue
 				}
-				result, err = deployContract(deploy, do, response, contractPath)
+				result, err = deployContract(deploy, jobs, response, contractPath)
 				if err != nil {
 					return "", err
 				}
@@ -187,7 +187,7 @@ func (deploy *Deploy) Execute(do *definitions.Do) (*definitions.JobResults, erro
 					continue
 				}
 				if strings.ToLower(response.Objectname) == strings.ToLower(deploy.Instance) {
-					result, err = deployContract(deploy, do, response, contractPath)
+					result, err = deployContract(deploy, jobs, response, contractPath)
 					if err != nil {
 						return "", err
 					}
@@ -197,21 +197,21 @@ func (deploy *Deploy) Execute(do *definitions.Do) (*definitions.JobResults, erro
 	}
 
 	// Don't use pubKey if account override
-	if deploy.Source != do.Package.Account {
-		do.PublicKey = oldKey
+	if deploy.Source != jobs.Package.Account {
+		jobs.PublicKey = oldKey
 	}
 
 	return result, nil
 }
 
 // TODO [rj] refactor to remove [contractPath] from functions signature => only used in a single error throw.
-func deployContract(deploy *definitions.Deploy, do *definitions.Do, compilersResponse compilers.ResponseItem, contractPath string) (string, error) {
+func deployContract(deploy Deploy, jobs *Jobs, compilersResponse compilers.ResponseItem, contractPath string) (string, error) {
 	log.WithField("=>", string(compilersResponse.ABI)).Debug("ABI Specification (From Compilers)")
 	contractCode := compilersResponse.Bytecode
 
 	// Save ABI
-	if _, err := os.Stat(do.ABIPath); os.IsNotExist(err) {
-		if err := os.Mkdir(do.ABIPath, 0775); err != nil {
+	if _, err := os.Stat(jobs.ABIPath); os.IsNotExist(err) {
+		if err := os.Mkdir(jobs.ABIPath, 0775); err != nil {
 			return "", err
 		}
 	}
@@ -219,7 +219,7 @@ func deployContract(deploy *definitions.Deploy, do *definitions.Do, compilersRes
 	// saving contract/library abi
 	var abiLocation string
 	if compilersResponse.Objectname != "" {
-		abiLocation = filepath.Join(do.ABIPath, compilersResponse.Objectname)
+		abiLocation = filepath.Join(jobs.ABIPath, compilersResponse.Objectname)
 		log.WithField("=>", abiLocation).Warn("Saving ABI")
 		if err := ioutil.WriteFile(abiLocation, []byte(compilersResponse.ABI), 0664); err != nil {
 			return "", err
@@ -240,20 +240,20 @@ func deployContract(deploy *definitions.Deploy, do *definitions.Do, compilersRes
 		log.Debug("Not saving binary.")
 	}
 
-	tx, err := deployRaw(do, deploy, compilersResponse.Objectname, contractCode)
+	tx, err := deployRaw(jobs, deploy, compilersResponse.Objectname, contractCode)
 	if err != nil {
 		return "", err
 	}
 
 	// Sign, broadcast, display
-	result, err := deployFinalize(do, tx)
+	result, err := deployFinalize(jobs, tx)
 	if err != nil {
 		return "", fmt.Errorf("Error finalizing contract deploy %s: %v", contractPath, err)
 	}
 
 	// saving contract/library abi at abi/address
 	if result != "" {
-		abiLocation := filepath.Join(do.ABIPath, result)
+		abiLocation := filepath.Join(jobs.ABIPath, result)
 		log.WithField("=>", abiLocation).Debug("Saving ABI")
 		if err := ioutil.WriteFile(abiLocation, []byte(compilersResponse.ABI), 0664); err != nil {
 			return "", err
@@ -266,7 +266,7 @@ func deployContract(deploy *definitions.Deploy, do *definitions.Do, compilersRes
 	return result, err
 }
 
-func deployRaw(do *definitions.Do, deploy *definitions.Deploy, contractName, contractCode string) (*txs.CallTx, error) {
+func deployRaw(jobs *Jobs, deploy Deploy, contractName, contractCode string) (*txs.CallTx, error) {
 
 	// Deploy contract
 	log.WithFields(log.Fields{
@@ -278,9 +278,9 @@ func deployRaw(do *definitions.Do, deploy *definitions.Deploy, contractName, con
 		"code":   contractCode,
 	}).Info()
 
-	erisNodeClient := client.NewErisNodeClient(do.ChainName)
-	erisKeyClient := keys.NewErisKeyClient(do.Signer)
-	tx, err := core.Call(erisNodeClient, erisKeyClient, do.PublicKey, deploy.Source, "", deploy.Amount, deploy.Nonce, deploy.Gas, deploy.Fee, contractCode)
+	erisNodeClient := client.NewErisNodeClient(jobs.ChainName)
+	erisKeyClient := keys.NewErisKeyClient(jobs.Signer)
+	tx, err := core.Call(erisNodeClient, erisKeyClient, jobs.PublicKey, deploy.Source, "", deploy.Amount, deploy.Nonce, deploy.Gas, deploy.Fee, contractCode)
 	if err != nil {
 		return &txs.CallTx{}, fmt.Errorf("Error deploying contract %s: %v", contractName, err)
 	}
@@ -288,7 +288,38 @@ func deployRaw(do *definitions.Do, deploy *definitions.Deploy, contractName, con
 	return tx, err
 }
 
-func CallJob(call *definitions.Call, do *definitions.Do) (string, []*definitions.Variable, error) {
+type Call struct {
+	// (Optional, if account job or global account set) address of the account from which to send (the
+	// public key for the account must be available to eris-keys)
+	Source string `mapstructure:"source" json:"source" yaml:"source" toml:"source"`
+	// (Required) address of the contract which should be called
+	Destination string `mapstructure:"destination" json:"destination" yaml:"destination" toml:"destination"`
+	// (Required unless testing fallback function) function inside the contract to be called
+	Function string `mapstructure:"function" json:"function" yaml:"function" toml:"function"`
+	// (Optional) data which should be called. will use the eris-abi tooling under the hood to formalize the
+	// transaction
+	Data interface{} `mapstructure:"data" json:"data" yaml:"data" toml:"data"`
+	// (Optional) amount of tokens to send to the contract
+	Amount string `mapstructure:"amount" json:"amount" yaml:"amount" toml:"amount"`
+	// (Optional) validators' fee
+	Fee string `mapstructure:"fee" json:"fee" yaml:"fee" toml:"fee"`
+	// (Optional) amount of gas which should be sent along with the call transaction
+	Gas string `mapstructure:"gas" json:"gas" yaml:"gas" toml:"gas"`
+	// (Optional, advanced only) nonce to use when eris-keys signs the transaction (do not use unless you
+	// know what you're doing)
+	Nonce string `mapstructure:"nonce" json:"nonce" yaml:"nonce" toml:"nonce"`
+	// (Optional) location of the abi file to use (can be relative path or in abi path)
+	// deployed contracts save ABI artifacts in the abi folder as *both* the name of the contract
+	// and the address where the contract was deployed to
+	ABI string `mapstructure:"abi" json:"abi" yaml:"abi" toml:"abi"`
+	// (Optional) by default the call job will "store" the return from the contract as the
+	// result of the job. If you would like to store the transaction hash instead of the
+	// return from the call job as the result of the call job then select "tx" on the save
+	// variable. Anything other than "tx" in this field will use the default.
+	Save string `mapstructure:"save" json:"save" yaml:"save" toml:"save"`
+}
+
+/*func CallJob(call Call, jobs *Jobs) (string, []Variable, error) {
 	var err error
 	var callData string
 	var callDataArray []string
@@ -296,9 +327,9 @@ func CallJob(call *definitions.Call, do *definitions.Do) (string, []*definitions
 	call.Source, _ = util.PreProcess(call.Source, do)
 	call.Destination, _ = util.PreProcess(call.Destination, do)
 	//todo: find a way to call the fallback function here
-	call.Function, callDataArray, err = util.PreProcessInputData(call.Function, call.Data, do, false)
+	call.Function, callDataArray, err = util.PreProcessInputData(call.Function, call.Data, jobs, false)
 	if err != nil {
-		return "", make([]*definitions.Variable, 0), err
+		return "", make([]Variable, 0), err
 	}
 	call.Function, _ = util.PreProcess(call.Function, do)
 	call.Amount, _ = util.PreProcess(call.Amount, do)
@@ -308,10 +339,10 @@ func CallJob(call *definitions.Call, do *definitions.Do) (string, []*definitions
 	call.ABI, _ = util.PreProcess(call.ABI, do)
 
 	// Use default
-	call.Source = useDefault(call.Source, do.Package.Account)
-	call.Amount = useDefault(call.Amount, do.DefaultAmount)
-	call.Fee = useDefault(call.Fee, do.DefaultFee)
-	call.Gas = useDefault(call.Gas, do.DefaultGas)
+	call.Source = useDefault(call.Source, jobs.Package.Account)
+	call.Amount = useDefault(call.Amount, jobs.DefaultAmount)
+	call.Fee = useDefault(call.Fee, jobs.DefaultFee)
+	call.Gas = useDefault(call.Gas, jobs.DefaultGas)
 
 	// formulate call
 	var packedBytes []byte
@@ -326,16 +357,16 @@ func CallJob(call *definitions.Call, do *definitions.Do) (string, []*definitions
 		if call.Function == "()" {
 			log.Warn("Calling the fallback function")
 		} else {
-			var str, err = util.ABIErrorHandler(do, err, call, nil)
-			return str, make([]*definitions.Variable, 0), err
+			var str, err = util.ABIErrorHandler(jobs, err, call, nil)
+			return str, make([]Variable, 0), err
 		}
 	}
 
 	// Don't use pubKey if account override
 	var oldKey string
-	if call.Source != do.Package.Account {
-		oldKey = do.PublicKey
-		do.PublicKey = ""
+	if call.Source != jobs.Account {
+		oldKey = jobs.PublicKey
+		jobs.PublicKey = ""
 	}
 
 	log.WithFields(log.Fields{
@@ -344,24 +375,24 @@ func CallJob(call *definitions.Call, do *definitions.Do) (string, []*definitions
 		"data":        callData,
 	}).Info("Calling")
 
-	erisNodeClient := client.NewErisNodeClient(do.ChainName)
-	erisKeyClient := keys.NewErisKeyClient(do.Signer)
-	tx, err := core.Call(erisNodeClient, erisKeyClient, do.PublicKey, call.Source, call.Destination, call.Amount, call.Nonce, call.Gas, call.Fee, callData)
+	erisNodeClient := client.NewErisNodeClient(jobs.ChainName)
+	erisKeyClient := keys.NewErisKeyClient(jobs.Signer)
+	tx, err := core.Call(erisNodeClient, erisKeyClient, jobs.PublicKey, call.Source, call.Destination, call.Amount, call.Nonce, call.Gas, call.Fee, callData)
 	if err != nil {
-		return "", make([]*definitions.Variable, 0), err
+		return "", make([]Variable, 0), err
 	}
 
 	// Don't use pubKey if account override
-	if call.Source != do.Package.Account {
-		do.PublicKey = oldKey
+	if call.Source != jobs.Package.Account {
+		jobs.PublicKey = oldKey
 	}
 
 	// Sign, broadcast, display
 
-	res, err := core.SignAndBroadcast(do.ChainID, erisNodeClient, erisKeyClient, tx, true, true, true)
+	res, err := core.SignAndBroadcast(jobs.ChainID, erisNodeClient, erisKeyClient, tx, true, true, true)
 	if err != nil {
-		var str, err = util.MintChainErrorHandler(do, err)
-		return str, make([]*definitions.Variable, 0), err
+		var str, err = util.MintChainErrorHandler(jobs, err)
+		return str, make([]Variable, 0), err
 	}
 
 	txResult := res.Return
@@ -377,7 +408,7 @@ func CallJob(call *definitions.Call, do *definitions.Do) (string, []*definitions
 			call.Variables, err = abi.ReadAndDecodeContractReturn(call.ABI, call.Function, txResult, do)
 		}
 		if err != nil {
-			return "", make([]*definitions.Variable, 0), err
+			return "", make([]Variable, 0), err
 		}
 		log.WithField("=>", call.Variables).Debug("call variables:")
 		result = util.GetReturnValue(call.Variables)
@@ -396,16 +427,16 @@ func CallJob(call *definitions.Call, do *definitions.Do) (string, []*definitions
 	}
 
 	return result, call.Variables, nil
-}
+}*/
 
-func deployFinalize(do *definitions.Do, tx interface{}) (string, error) {
+func deployFinalize(jobs *Jobs, tx interface{}) (string, error) {
 	var result string
 
-	erisNodeClient := client.NewErisNodeClient(do.ChainName)
-	erisKeyClient := keys.NewErisKeyClient(do.Signer)
-	res, err := core.SignAndBroadcast(do.ChainID, erisNodeClient, erisKeyClient, tx.(txs.Tx), true, true, true)
+	erisNodeClient := client.NewErisNodeClient(jobs.ChainName)
+	erisKeyClient := keys.NewErisKeyClient(jobs.Signer)
+	res, err := core.SignAndBroadcast(jobs.ChainID, erisNodeClient, erisKeyClient, tx.(txs.Tx), true, true, true)
 	if err != nil {
-		return util.MintChainErrorHandler(do, err)
+		return util.MintChainErrorHandler(jobs, err)
 	}
 
 	if err := util.ReadTxSignAndBroadcast(res, err); err != nil {

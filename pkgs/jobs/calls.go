@@ -1,22 +1,10 @@
-package jobs 
+package jobs
 
-import (
-	"fmt"
-
-	"github.com/eris-ltd/eris-cli/log"
-	"github.com/eris-ltd/eris-cli/util"
-
-	"github.com/eris-ltd/eris-db/client"
-	"github.com/eris-ltd/eris-db/client/core"
-	"github.com/eris-ltd/eris-db/keys"
-	"github.com/eris-ltd/eris-db/txs"
-)
-
-func getResultsFromJobTransaction(job JobsCommon, do *definitions.Do, additionalInput interface{}) (*definitions.JobResults, error) {
+/*func getResultsFromJobTransaction(job JobsCommon, do *definitions.Do, additionalInput interface{}) (*definitions.JobResults, error) {
 	var txGroup string
 	var tx txs.Tx
 	var err error
-	
+
 	//erisNodeClient := client.NewErisNodeClient(do.ChainName)
 	//erisKeyClient := keys.NewErisKeyClient(do.Signer)
 	oldKey := accountOverride(job, do)
@@ -54,27 +42,4 @@ func getResultsFromJobTransaction(job JobsCommon, do *definitions.Do, additional
 		log.Error("ERROR =>")
 		return "", err
 	}
-}
-
-func accountOverride(job JobsCommon, do *definitions.Do) string {
-	var oldKey
-	switch jobType := jobType.(type) {
-	case *Send, *BondJob, *Call, *Deploy, *Rebond, *Unbond, *Permission, *Name:
-		// Don't use pubKey if account override
-		if jobType.Source != do.Package.Account {
-			oldKey = do.PublicKey
-			do.PublicKey = ""
-		}
-	}
-	return oldKey
-}
-
-func accountUnoverride(job JobsCommon, do *definitions.Do, oldKey string) {
-	switch jobType := jobType.(type) {
-	case *Send, *BondJob, *Call, *Deploy, *Rebond, *Unbond, *Permission, *Name:
-		// Don't use pubKey if account override
-		if job.Source != do.Package.Source {
-			do.PublicKey = oldKey
-		}
-	}
-}
+}*/

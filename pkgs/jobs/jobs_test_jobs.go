@@ -1,16 +1,15 @@
 package jobs
 
 import (
-	"encoding/hex"
-	"fmt"
-	"strconv"
+//"encoding/hex"
+//"fmt"
+//"strconv"
 
-	"github.com/eris-ltd/eris-cli/definitions"
-	"github.com/eris-ltd/eris-cli/log"
-	"github.com/eris-ltd/eris-cli/pkgs/abi"
-	"github.com/eris-ltd/eris-cli/util"
+/*"github.com/eris-ltd/eris-cli/log"
+"github.com/eris-ltd/eris-cli/pkgs/abi"
+"github.com/eris-ltd/eris-cli/util"
 
-	"github.com/eris-ltd/eris-db/client"
+"github.com/eris-ltd/eris-db/client"*/
 )
 
 // ------------------------------------------------------------------------
@@ -34,8 +33,6 @@ type QueryContract struct {
 	// deployed contracts save ABI artifacts in the abi folder as *both* the name of the contract
 	// and the address where the contract was deployed to
 	ABI string `mapstructure:"abi" json:"abi" yaml:"abi" toml:"abi"`
-
-	Variables []*Variable
 }
 
 type QueryAccount struct {
@@ -76,7 +73,7 @@ type Assert struct {
 	Value string `mapstructure:"val" json:"val" yaml:"val" toml:"val"`
 }
 
-func QueryContractJob(query *definitions.QueryContract, do *definitions.Do) (string, []*definitions.Variable, error) {
+/*func QueryContractJob(query *definitions.QueryContract, do *definitions.Do) (string, []*definitions.Variable, error) {
 	// Preprocess variables. We don't preprocess data as it is processed by ReadAbiFormulateCall
 	query.Source, _ = util.PreProcess(query.Source, do)
 	query.Destination, _ = util.PreProcess(query.Destination, do)
@@ -212,9 +209,9 @@ func QueryValsJob(query *definitions.QueryVals, do *definitions.Do) (string, err
 		log.Debug("No return.")
 	}
 	return result, nil
-}
+}*/
 
-func AssertJob(assertion *definitions.Assert, do *definitions.Do) (string, error) {
+/*func AssertJob(assertion *definitions.Assert, do *definitions.Do) (string, error) {
 	var result string
 	// Preprocess variables
 	assertion.Key, _ = util.PreProcess(assertion.Key, do)
@@ -230,11 +227,6 @@ func AssertJob(assertion *definitions.Assert, do *definitions.Do) (string, error
 
 	switch assertion.Relation {
 	case "==", "eq":
-		/*log.Debug("Compare", strings.Compare(assertion.Key, assertion.Value))
-		log.Debug("UTF8?: ", utf8.ValidString(assertion.Key))
-		log.Debug("UTF8?: ", utf8.ValidString(assertion.Value))
-		log.Debug("UTF8?: ", utf8.RuneCountInString(assertion.Key))
-		log.Debug("UTF8?: ", utf8.RuneCountInString(assertion.Value))*/
 		if assertion.Key == assertion.Value {
 			return assertPass("==", assertion.Key, assertion.Value)
 		} else {
@@ -315,4 +307,4 @@ func assertFail(typ, key, val string) (string, error) {
 
 func convFail() (string, error) {
 	return "", fmt.Errorf("The Key of your assertion cannot be converted into an integer.\nFor string conversions please use the equal or not equal relations.")
-}
+}*/

@@ -1,5 +1,12 @@
 package jobs
 
+import (
+	"fmt"
+	"reflect"
+
+	"github.com/eris-ltd/eris-cli/log"
+)
+
 type JobResults struct {
 	// Full Result
 	JobResult string
@@ -9,7 +16,7 @@ type JobResults struct {
 
 type JobsCommon interface {
 	PreProcess(*Jobs) error
-	Execute(*Do) (*JobResults, error)
+	Execute(*Jobs) (*JobResults, error)
 }
 
 type Job struct {
@@ -50,7 +57,39 @@ type Job struct {
 	QueryVals *QueryVals `mapstructure:"query-vals" json:"query-vals" yaml:"query-vals" toml:"query-vals"`
 	// Makes and assertion (useful for testing purposes)
 	Assert *Assert `mapstructure:"assert" json:"assert" yaml:"assert" toml:"assert"`
-
 	// Results of the job
 	Results JobResults
+}
+
+func (job *Job) getType() (JobsCommon, error) {
+	jobType := reflect.ValueOf(job)
+	jobValue := jobType.Elem()
+	//iterate through struct field and execute non nil and non name fields
+	//break after executing so that we don't run into other fields
+	for i := 1; i < jobValue.NumField(); i++ {
+		field := jobValue.Field(i)
+		if ptr := field.Pointer(); ptr != 0 {
+			return field.Interface().(JobsCommon), nil
+		}
+	}
+	return nil, fmt.Errorf("Could not find a job to execute.")
+}
+
+func (job *Job) announce(jobType JobsCommon) {
+	log.Warn("\n*****Executing Job*****\n")
+	log.WithField("=>", job.Name).Warn("Job Name")
+	typ := fmt.Sprintf("%T", jobType)
+	log.WithField("=>", typ).Info("Type")
+}
+
+func (job *Job) beginJob(jobType JobsCommon, jobs *Jobs) (*JobResults, error) {
+	err := jobType.PreProcess(jobs)
+	if err != nil {
+		return &JobResults{}, err
+	}
+	results, err := jobType.Execute(jobs)
+	if err != nil {
+		return &JobResults{}, err
+	}
+	return results, nil
 }
