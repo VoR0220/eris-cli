@@ -6,7 +6,6 @@ import (
 	//"io"
 	//"os"
 
-	"github.com/eris-ltd/eris-cli/definitions"
 	"github.com/eris-ltd/eris-cli/log"
 	"github.com/eris-ltd/eris-cli/util"
 )
@@ -288,7 +287,7 @@ func (perm *Permission) PreProcess(jobs *Jobs) (err error) {
 	perm.Source = useDefault(perm.Source, jobs.Account)
 }
 
-func (perm *Permission) Execute(jobs *Jobs) (*definitions.JobResults, error) {
+func (perm *Permission) Execute(jobs *Jobs) (*JobResults, error) {
 	log.Debug("Target: ", perm.Target)
 	log.Debug("Marmots Deny: ", perm.Role)
 	log.Debug("Action: ", perm.Action)
@@ -307,7 +306,7 @@ func (perm *Permission) Execute(jobs *Jobs) (*definitions.JobResults, error) {
 
 	// Don't use pubKey if account override
 	var oldKey string
-	if perm.Source != jobs.Package.Account {
+	if perm.Source != jobs.Account {
 		oldKey = jobs.PublicKey
 		jobs.PublicKey = ""
 	}
@@ -326,7 +325,7 @@ func (perm *Permission) Execute(jobs *Jobs) (*definitions.JobResults, error) {
 	log.Debug("What are the args returned in transaction: ", tx.PermArgs)
 
 	// Don't use pubKey if account override
-	if perm.Source != jobs.Package.Account {
+	if perm.Source != jobs.Account {
 		jobs.PublicKey = oldKey
 	}
 

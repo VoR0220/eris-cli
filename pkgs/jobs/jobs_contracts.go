@@ -13,7 +13,6 @@ import (
 	"github.com/eris-ltd/eris-cli/log"
 	"github.com/eris-ltd/eris-cli/util"
 
-	compilers "github.com/eris-ltd/eris-compilers/perform"
 	"github.com/eris-ltd/eris-db/client"
 	"github.com/eris-ltd/eris-db/client/core"
 	"github.com/eris-ltd/eris-db/keys"
@@ -54,7 +53,7 @@ type Deploy struct {
 	// If instance is not specified, all instances from contract and instances in files from compile will deploy.
 	// If contract is not specified, files of compiler will by default be deployed.
 	// Will not take gas estimates.
-	Compiler string `mapstructure:"save" json:"save" yaml:"save" toml:"save"`
+	Compiler string `mapstructure:"compiler" json:"compiler" yaml:"compiler" toml:"compiler"`
 	// (Optional, advanced only) nonce to use when eris-keys signs the transaction (do not use unless you
 	// know what you're doing)
 	Nonce string `mapstructure:"nonce" json:"nonce" yaml:"nonce" toml:"nonce"`
@@ -80,7 +79,7 @@ func (deploy *Deploy) PreProcess(jobs *Jobs) (err error) {
 	deploy.Gas = useDefault(deploy.Gas, jobs.DefaultGas)
 
 	// Compile contracts before deploying
-	/*if deploy.Compiler != "" {
+	if deploy.Compiler != "" {
 		if !strings.HasPrefix(deploy.Compiler, "$"){
 			return fmt.Errorf("Could not use compiler %v. Could not link properly to pre-run job.", deploy.Compiler)
 		}
@@ -94,11 +93,11 @@ func (deploy *Deploy) PreProcess(jobs *Jobs) (err error) {
 		packedBytes, err = abi.ReadAbiFormulateCall(compilersResponse.Objectname, "", callDataArray, jobs)
 		callData := hex.EncodeToString(packedBytes)
 		contractCode = contractCode + callData
-	}*/
+	}
 	return err
 }
 
-func (deploy *Deploy) Execute(jobs *Jobs) (JobResults, error) {
+func (deploy *Deploy) Execute(jobs *Jobs) (*JobResults, error) {
 	// trim the extension
 	contractName := strings.TrimSuffix(deploy.Contract, filepath.Ext(deploy.Contract))
 
@@ -206,7 +205,7 @@ func (deploy *Deploy) Execute(jobs *Jobs) (JobResults, error) {
 
 // TODO [rj] refactor to remove [contractPath] from functions signature => only used in a single error throw.
 func deployContract(deploy Deploy, jobs *Jobs, compilersResponse compilers.ResponseItem, contractPath string) (string, error) {
-	log.WithField("=>", string(compilersResponse.ABI)).Debug("ABI Specification (From Compilers)")
+/*	log.WithField("=>", string(compilersResponse.ABI)).Debug("ABI Specification (From Compilers)")
 	contractCode := compilersResponse.Bytecode
 
 	// Save ABI
@@ -286,7 +285,7 @@ func deployRaw(jobs *Jobs, deploy Deploy, contractName, contractCode string) (*t
 	}
 
 	return tx, err
-}
+}*/
 
 type Call struct {
 	// (Optional, if account job or global account set) address of the account from which to send (the
@@ -427,7 +426,7 @@ type Call struct {
 	}
 
 	return result, call.Variables, nil
-}*/
+}
 
 func deployFinalize(jobs *Jobs, tx interface{}) (string, error) {
 	var result string
@@ -446,4 +445,4 @@ func deployFinalize(jobs *Jobs, tx interface{}) (string, error) {
 
 	result = fmt.Sprintf("%X", res.Address)
 	return result, nil
-}
+}*/

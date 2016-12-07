@@ -3,6 +3,8 @@ package jobs
 import (
 	"fmt"
 	"strings"
+
+	"github.com/eris-ltd/eris-cli/pkgs/abi"
 )
 
 func stringPreProcess(val string, jobs *Jobs) (string, error) {
@@ -143,9 +145,7 @@ func PreProcessInputData(function string, data interface{}, jobs *Jobs, construc
 }
 
 func SplitAndPreProcessStringPairs(value string, operator string, jobs *Jobs) (string, error) {
-	if strings.HasPrefix(value, "$") {
-		return StringPreProcess(value, do)
-	} else if value == "" {
+	if value == "" {
 		return "", nil
 	} else {
 		var result string
@@ -166,7 +166,7 @@ func SplitAndPreProcessStringPairs(value string, operator string, jobs *Jobs) (s
 	}
 }
 
-func GetReturnValue(vars []*definitions.Variable) string {
+func GetReturnValue(vars []*abi.Variable) string {
 	var result []string
 
 	if len(vars) > 1 {
