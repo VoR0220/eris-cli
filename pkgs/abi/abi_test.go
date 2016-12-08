@@ -25,18 +25,17 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/eris-ltd/eris-cli/util"
-
 	"github.com/eris-ltd/eris-keys/crypto"
+	"github.com/eris-ltd/eris-cli/interpret"
 )
 
 // formatSilceOutput add padding to the value and adds a size
 func formatSliceOutput(v ...[]byte) []byte {
-	off := util.LeftPadBytes(big.NewInt(int64(len(v))).Bytes(), 32)
+	off := interpret.LeftPadBytes(big.NewInt(int64(len(v))).Bytes(), 32)
 	output := append(off, make([]byte, 0, len(v)*32)...)
 
 	for _, value := range v {
-		output = append(output, util.LeftPadBytes(value, 32)...)
+		output = append(output, interpret.LeftPadBytes(value, 32)...)
 	}
 	return output
 }
@@ -44,9 +43,9 @@ func formatSliceOutput(v ...[]byte) []byte {
 // quick helper padding
 func pad(input []byte, size int, left bool) []byte {
 	if left {
-		return util.LeftPadBytes(input, size)
+		return interpret.LeftPadBytes(input, size)
 	}
-	return util.RightPadBytes(input, size)
+	return interpret.RightPadBytes(input, size)
 }
 
 func TestTypeCheck(t *testing.T) {
@@ -68,18 +67,18 @@ func TestTypeCheck(t *testing.T) {
 		{"uint16[3]", [4]uint16{1, 2, 3}, "abi: cannot use [4]uint16 as type [3]uint16 as argument"},
 		{"uint16[3]", []uint16{1, 2, 3}, ""},
 		{"uint16[3]", []uint16{1, 2, 3, 4}, "abi: cannot use [4]uint16 as type [3]uint16 as argument"},
-		{"address[]", []Address{Address{1}}, ""},
-		{"address[1]", []Address{Address{1}}, ""},
-		{"address[1]", [1]Address{Address{1}}, ""},
-		{"address[2]", [1]Address{Address{1}}, "abi: cannot use [1]array as type [2]array as argument"},
+		{"address[]", []interpret.Address{interpret.Address{1}}, ""},
+		{"address[1]", []interpret.Address{interpret.Address{1}}, ""},
+		{"address[1]", [1]interpret.Address{interpret.Address{1}}, ""},
+		{"address[2]", [1]interpret.Address{interpret.Address{1}}, "abi: cannot use [1]array as type [2]array as argument"},
 		{"bytes32", [32]byte{}, ""},
 		{"bytes32", [33]byte{}, "abi: cannot use [33]uint8 as type [32]uint8 as argument"},
-		{"bytes32", Hash{1}, ""},
+		{"bytes32", interpret.Hash{1}, ""},
 		{"bytes31", [31]byte{}, ""},
 		{"bytes31", [32]byte{}, "abi: cannot use [32]uint8 as type [31]uint8 as argument"},
 		{"bytes", []byte{0, 1}, ""},
 		{"bytes", [2]byte{0, 1}, ""},
-		{"bytes", Hash{1}, ""},
+		{"bytes", interpret.Hash{1}, ""},
 		{"string", "hello world", ""},
 		{"bytes32[]", [][32]byte{[32]byte{}}, ""},
 	} {
@@ -173,7 +172,7 @@ func TestSimpleMethodUnpack(t *testing.T) {
 		{
 			`[ { "type": "address" } ]`,
 			pad(pad([]byte{1}, 20, false), 32, true),
-			Address{1},
+			interpret.Address{1},
 			"address",
 			"",
 		},
@@ -245,7 +244,7 @@ func TestSimpleMethodUnpack(t *testing.T) {
 			err = abi.Unpack(&v, "method", test.marshalledOutput)
 			outvar = v
 		case "address":
-			var v Address
+			var v interpret.Address
 			err = abi.Unpack(&v, "method", test.marshalledOutput)
 			outvar = v
 		case "bytes":
@@ -253,7 +252,7 @@ func TestSimpleMethodUnpack(t *testing.T) {
 			err = abi.Unpack(&v, "method", test.marshalledOutput)
 			outvar = v
 		case "hash":
-			var v Hash
+			var v interpret.Hash
 			err = abi.Unpack(&v, "method", test.marshalledOutput)
 			outvar = v
 		case "interface":
@@ -279,7 +278,7 @@ func TestSimpleMethodUnpack(t *testing.T) {
 		if err == nil {
 			// bit of an ugly hack for hash type but I don't feel like finding a proper solution
 			if test.outVar == "hash" {
-				tmp := outvar.(Hash) // without assignment it's unaddressable
+				tmp := outvar.(interpret.Hash) // without assignment it's unaddressable
 				outvar = tmp[:]
 			}
 
@@ -332,8 +331,8 @@ func TestPack(t *testing.T) {
 		{"uint16[]", []uint16{1, 2}, formatSliceOutput([]byte{1}, []byte{2})},
 		{"bytes20", [20]byte{1}, pad([]byte{1}, 32, false)},
 		{"uint256[]", []*big.Int{big.NewInt(1), big.NewInt(2)}, formatSliceOutput([]byte{1}, []byte{2})},
-		{"address[]", []Address{Address{1}, Address{2}}, formatSliceOutput(pad([]byte{1}, 20, false), pad([]byte{2}, 20, false))},
-		{"bytes32[]", []Hash{Hash{1}, Hash{2}}, formatSliceOutput(pad([]byte{1}, 32, false), pad([]byte{2}, 32, false))},
+		{"address[]", []interpret.Address{interpret.Address{1}, interpret.Address{2}}, formatSliceOutput(pad([]byte{1}, 20, false), pad([]byte{2}, 20, false))},
+		{"bytes32[]", []interpret.Hash{interpret.Hash{1}, interpret.Hash{2}}, formatSliceOutput(pad([]byte{1}, 32, false), pad([]byte{2}, 32, false))},
 	} {
 		typ, err := NewType(test.typ)
 		if err != nil {
@@ -358,8 +357,8 @@ func TestMethodPack(t *testing.T) {
 	}
 
 	sig := abi.Methods["slice"].Id()
-	sig = append(sig, util.LeftPadBytes([]byte{1}, 32)...)
-	sig = append(sig, util.LeftPadBytes([]byte{2}, 32)...)
+	sig = append(sig, interpret.LeftPadBytes([]byte{1}, 32)...)
+	sig = append(sig, interpret.LeftPadBytes([]byte{2}, 32)...)
 
 	packed, err := abi.Pack("slice", []uint32{1, 2})
 	if err != nil {
@@ -370,14 +369,14 @@ func TestMethodPack(t *testing.T) {
 		t.Errorf("expected %x got %x", sig, packed)
 	}
 
-	var addrA, addrB = Address{1}, Address{2}
+	var addrA, addrB = interpret.Address{1}, interpret.Address{2}
 	sig = abi.Methods["sliceAddress"].Id()
-	sig = append(sig, util.LeftPadBytes([]byte{32}, 32)...)
-	sig = append(sig, util.LeftPadBytes([]byte{2}, 32)...)
-	sig = append(sig, util.LeftPadBytes(addrA[:], 32)...)
-	sig = append(sig, util.LeftPadBytes(addrB[:], 32)...)
+	sig = append(sig, interpret.LeftPadBytes([]byte{32}, 32)...)
+	sig = append(sig, interpret.LeftPadBytes([]byte{2}, 32)...)
+	sig = append(sig, interpret.LeftPadBytes(addrA[:], 32)...)
+	sig = append(sig, interpret.LeftPadBytes(addrB[:], 32)...)
 
-	packed, err = abi.Pack("sliceAddress", []Address{addrA, addrB})
+	packed, err = abi.Pack("sliceAddress", []interpret.Address{addrA, addrB})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -385,18 +384,18 @@ func TestMethodPack(t *testing.T) {
 		t.Errorf("expected %x got %x", sig, packed)
 	}
 
-	var addrC, addrD = Address{3}, Address{4}
+	var addrC, addrD = interpret.Address{3}, interpret.Address{4}
 	sig = abi.Methods["sliceMultiAddress"].Id()
-	sig = append(sig, util.LeftPadBytes([]byte{64}, 32)...)
-	sig = append(sig, util.LeftPadBytes([]byte{160}, 32)...)
-	sig = append(sig, util.LeftPadBytes([]byte{2}, 32)...)
-	sig = append(sig, util.LeftPadBytes(addrA[:], 32)...)
-	sig = append(sig, util.LeftPadBytes(addrB[:], 32)...)
-	sig = append(sig, util.LeftPadBytes([]byte{2}, 32)...)
-	sig = append(sig, util.LeftPadBytes(addrC[:], 32)...)
-	sig = append(sig, util.LeftPadBytes(addrD[:], 32)...)
+	sig = append(sig, interpret.LeftPadBytes([]byte{64}, 32)...)
+	sig = append(sig, interpret.LeftPadBytes([]byte{160}, 32)...)
+	sig = append(sig, interpret.LeftPadBytes([]byte{2}, 32)...)
+	sig = append(sig, interpret.LeftPadBytes(addrA[:], 32)...)
+	sig = append(sig, interpret.LeftPadBytes(addrB[:], 32)...)
+	sig = append(sig, interpret.LeftPadBytes([]byte{2}, 32)...)
+	sig = append(sig, interpret.LeftPadBytes(addrC[:], 32)...)
+	sig = append(sig, interpret.LeftPadBytes(addrD[:], 32)...)
 
-	packed, err = abi.Pack("sliceMultiAddress", []Address{addrA, addrB}, []Address{addrC, addrD})
+	packed, err = abi.Pack("sliceMultiAddress", []interpret.Address{addrA, addrB}, []interpret.Address{addrC, addrD})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -405,8 +404,8 @@ func TestMethodPack(t *testing.T) {
 	}
 
 	sig = abi.Methods["slice256"].Id()
-	sig = append(sig, util.LeftPadBytes([]byte{1}, 32)...)
-	sig = append(sig, util.LeftPadBytes([]byte{2}, 32)...)
+	sig = append(sig, interpret.LeftPadBytes([]byte{1}, 32)...)
+	sig = append(sig, interpret.LeftPadBytes([]byte{2}, 32)...)
 
 	packed, err = abi.Pack("slice256", []*big.Int{big.NewInt(1), big.NewInt(2)})
 	if err != nil {
@@ -599,7 +598,7 @@ func ExampleJSON() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	out, err := abi.Pack("isBar", HexToAddress("01"))
+	out, err := abi.Pack("isBar", interpret.HexToAddress("01"))
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -632,7 +631,7 @@ func TestInputVariableInputLength(t *testing.T) {
 	offset[31] = 32
 	length := make([]byte, 32)
 	length[31] = byte(len(strin))
-	value := util.RightPadBytes([]byte(strin), 32)
+	value := interpret.RightPadBytes([]byte(strin), 32)
 	exp := append(offset, append(length, value...)...)
 
 	// ignore first 4 bytes of the output. This is the function identifier
@@ -664,13 +663,13 @@ func TestInputVariableInputLength(t *testing.T) {
 	offset1[31] = 64
 	length1 := make([]byte, 32)
 	length1[31] = byte(len(str1))
-	value1 := util.RightPadBytes([]byte(str1), 32)
+	value1 := interpret.RightPadBytes([]byte(str1), 32)
 
 	offset2 := make([]byte, 32)
 	offset2[31] = 128
 	length2 := make([]byte, 32)
 	length2[31] = byte(len(str2))
-	value2 := util.RightPadBytes([]byte(str2), 32)
+	value2 := interpret.RightPadBytes([]byte(str2), 32)
 
 	exp2 := append(offset1, offset2...)
 	exp2 = append(exp2, append(length1, value1...)...)
@@ -693,7 +692,7 @@ func TestInputVariableInputLength(t *testing.T) {
 	offset1[31] = 64
 	length1 = make([]byte, 32)
 	length1[31] = byte(len(str1))
-	value1 = util.RightPadBytes([]byte(str1), 64)
+	value1 = interpret.RightPadBytes([]byte(str1), 64)
 	offset2[31] = 160
 
 	exp2 = append(offset1, offset2...)
@@ -718,13 +717,13 @@ func TestInputVariableInputLength(t *testing.T) {
 	offset1[31] = 64
 	length1 = make([]byte, 32)
 	length1[31] = byte(len(str1))
-	value1 = util.RightPadBytes([]byte(str1), 64)
+	value1 = interpret.RightPadBytes([]byte(str1), 64)
 
 	offset2 = make([]byte, 32)
 	offset2[31] = 160
 	length2 = make([]byte, 32)
 	length2[31] = byte(len(str2))
-	value2 = util.RightPadBytes([]byte(str2), 64)
+	value2 = interpret.RightPadBytes([]byte(str2), 64)
 
 	exp2 = append(offset1, offset2...)
 	exp2 = append(exp2, append(length1, value1...)...)
@@ -784,11 +783,11 @@ func TestMultiReturnWithStruct(t *testing.T) {
 
 	// using buff to make the code readable
 	buff := new(bytes.Buffer)
-	buff.Write(Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"))
-	buff.Write(Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000040"))
-	buff.Write(Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000005"))
+	buff.Write(interpret.HexToBytes("0000000000000000000000000000000000000000000000000000000000000001"))
+	buff.Write(interpret.HexToBytes("0000000000000000000000000000000000000000000000000000000000000040"))
+	buff.Write(interpret.HexToBytes("0000000000000000000000000000000000000000000000000000000000000005"))
 	stringOut := "hello"
-	buff.Write(util.RightPadBytes([]byte(stringOut), 32))
+	buff.Write(interpret.RightPadBytes([]byte(stringOut), 32))
 
 	var inter struct {
 		Int    *big.Int
@@ -837,11 +836,11 @@ func TestMultiReturnWithSlice(t *testing.T) {
 
 	// using buff to make the code readable
 	buff := new(bytes.Buffer)
-	buff.Write(Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"))
-	buff.Write(Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000040"))
-	buff.Write(Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000005"))
+	buff.Write(interpret.HexToBytes("0000000000000000000000000000000000000000000000000000000000000001"))
+	buff.Write(interpret.HexToBytes("0000000000000000000000000000000000000000000000000000000000000040"))
+	buff.Write(interpret.HexToBytes("0000000000000000000000000000000000000000000000000000000000000005"))
 	stringOut := "hello"
-	buff.Write(util.RightPadBytes([]byte(stringOut), 32))
+	buff.Write(interpret.RightPadBytes([]byte(stringOut), 32))
 
 	var inter []interface{}
 	err = abi.Unpack(&inter, "multi", buff.Bytes())
@@ -873,7 +872,7 @@ func TestMarshalArrays(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	output := util.LeftPadBytes([]byte{1}, 32)
+	output := interpret.LeftPadBytes([]byte{1}, 32)
 
 	var bytes10 [10]byte
 	err = abi.Unpack(&bytes10, "bytes32", output)
@@ -941,7 +940,7 @@ func TestUnmarshal(t *testing.T) {
 
 	// marshal int
 	var Int *big.Int
-	err = abi.Unpack(&Int, "int", Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"))
+	err = abi.Unpack(&Int, "int", interpret.HexToBytes("0000000000000000000000000000000000000000000000000000000000000001"))
 	if err != nil {
 		t.Error(err)
 	}
@@ -952,7 +951,7 @@ func TestUnmarshal(t *testing.T) {
 
 	// marshal bool
 	var Bool bool
-	err = abi.Unpack(&Bool, "bool", Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"))
+	err = abi.Unpack(&Bool, "bool", interpret.HexToBytes("0000000000000000000000000000000000000000000000000000000000000001"))
 	if err != nil {
 		t.Error(err)
 	}
@@ -962,9 +961,9 @@ func TestUnmarshal(t *testing.T) {
 	}
 
 	// marshal dynamic bytes max length 32
-	buff.Write(Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000020"))
-	buff.Write(Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000020"))
-	bytesOut := util.RightPadBytes([]byte("hello"), 32)
+	buff.Write(interpret.HexToBytes("0000000000000000000000000000000000000000000000000000000000000020"))
+	buff.Write(interpret.HexToBytes("0000000000000000000000000000000000000000000000000000000000000020"))
+	bytesOut := interpret.RightPadBytes([]byte("hello"), 32)
 	buff.Write(bytesOut)
 
 	var Bytes []byte
@@ -979,9 +978,9 @@ func TestUnmarshal(t *testing.T) {
 
 	// marshall dynamic bytes max length 64
 	buff.Reset()
-	buff.Write(Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000020"))
-	buff.Write(Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000040"))
-	bytesOut = util.RightPadBytes([]byte("hello"), 64)
+	buff.Write(interpret.HexToBytes("0000000000000000000000000000000000000000000000000000000000000020"))
+	buff.Write(interpret.HexToBytes("0000000000000000000000000000000000000000000000000000000000000040"))
+	bytesOut = interpret.RightPadBytes([]byte("hello"), 64)
 	buff.Write(bytesOut)
 
 	err = abi.Unpack(&Bytes, "bytes", buff.Bytes())
@@ -995,9 +994,9 @@ func TestUnmarshal(t *testing.T) {
 
 	// marshall dynamic bytes max length 63
 	buff.Reset()
-	buff.Write(Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000020"))
-	buff.Write(Hex2Bytes("000000000000000000000000000000000000000000000000000000000000003f"))
-	bytesOut = util.RightPadBytes([]byte("hello"), 63)
+	buff.Write(interpret.HexToBytes("0000000000000000000000000000000000000000000000000000000000000020"))
+	buff.Write(interpret.HexToBytes("000000000000000000000000000000000000000000000000000000000000003f"))
+	bytesOut = interpret.RightPadBytes([]byte("hello"), 63)
 	buff.Write(bytesOut)
 
 	err = abi.Unpack(&Bytes, "bytes", buff.Bytes())
@@ -1017,9 +1016,9 @@ func TestUnmarshal(t *testing.T) {
 
 	// marshal dynamic bytes length 5
 	buff.Reset()
-	buff.Write(Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000020"))
-	buff.Write(Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000005"))
-	buff.Write(util.RightPadBytes([]byte("hello"), 32))
+	buff.Write(interpret.HexToBytes("0000000000000000000000000000000000000000000000000000000000000020"))
+	buff.Write(interpret.HexToBytes("0000000000000000000000000000000000000000000000000000000000000005"))
+	buff.Write(interpret.RightPadBytes([]byte("hello"), 32))
 
 	err = abi.Unpack(&Bytes, "bytes", buff.Bytes())
 	if err != nil {
@@ -1032,22 +1031,22 @@ func TestUnmarshal(t *testing.T) {
 
 	// marshal dynamic bytes length 5
 	buff.Reset()
-	buff.Write(util.RightPadBytes([]byte("hello"), 32))
+	buff.Write(interpret.RightPadBytes([]byte("hello"), 32))
 
-	var hash Hash
+	var hash interpret.Hash
 	err = abi.Unpack(&hash, "fixed", buff.Bytes())
 	if err != nil {
 		t.Error(err)
 	}
 
-	helloHash := BytesToHash(util.RightPadBytes([]byte("hello"), 32))
+	helloHash := interpret.BytesToHash(interpret.RightPadBytes([]byte("hello"), 32))
 	if hash != helloHash {
 		t.Errorf("Expected %x to equal %x", hash, helloHash)
 	}
 
 	// marshal error
 	buff.Reset()
-	buff.Write(Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000020"))
+	buff.Write(interpret.HexToBytes("0000000000000000000000000000000000000000000000000000000000000020"))
 	err = abi.Unpack(&Bytes, "bytes", buff.Bytes())
 	if err == nil {
 		t.Error("expected error")
@@ -1060,11 +1059,11 @@ func TestUnmarshal(t *testing.T) {
 
 	// marshal mixed bytes
 	buff.Reset()
-	buff.Write(Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000040"))
-	fixed := Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001")
+	buff.Write(interpret.HexToBytes("0000000000000000000000000000000000000000000000000000000000000040"))
+	fixed := interpret.HexToBytes("0000000000000000000000000000000000000000000000000000000000000001")
 	buff.Write(fixed)
-	buff.Write(Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000020"))
-	bytesOut = util.RightPadBytes([]byte("hello"), 32)
+	buff.Write(interpret.HexToBytes("0000000000000000000000000000000000000000000000000000000000000020"))
+	bytesOut = interpret.RightPadBytes([]byte("hello"), 32)
 	buff.Write(bytesOut)
 
 	var out []interface{}
@@ -1082,9 +1081,9 @@ func TestUnmarshal(t *testing.T) {
 	}
 
 	buff.Reset()
-	buff.Write(Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"))
-	buff.Write(Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000002"))
-	buff.Write(Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000003"))
+	buff.Write(interpret.HexToBytes("0000000000000000000000000000000000000000000000000000000000000001"))
+	buff.Write(interpret.HexToBytes("0000000000000000000000000000000000000000000000000000000000000002"))
+	buff.Write(interpret.HexToBytes("0000000000000000000000000000000000000000000000000000000000000003"))
 	// marshal int array
 	var intArray [3]*big.Int
 	err = abi.Unpack(&intArray, "intArraySingle", buff.Bytes())
@@ -1104,11 +1103,11 @@ func TestUnmarshal(t *testing.T) {
 
 	// marshal address slice
 	buff.Reset()
-	buff.Write(Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000020")) // offset
-	buff.Write(Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001")) // size
-	buff.Write(Hex2Bytes("0000000000000000000000000100000000000000000000000000000000000000"))
+	buff.Write(interpret.HexToBytes("0000000000000000000000000000000000000000000000000000000000000020")) // offset
+	buff.Write(interpret.HexToBytes("0000000000000000000000000000000000000000000000000000000000000001")) // size
+	buff.Write(interpret.HexToBytes("0000000000000000000000000100000000000000000000000000000000000000"))
 
-	var outAddr []Address
+	var outAddr []interpret.Address
 	err = abi.Unpack(&outAddr, "addressSliceSingle", buff.Bytes())
 	if err != nil {
 		t.Fatal("didn't expect error:", err)
@@ -1118,23 +1117,23 @@ func TestUnmarshal(t *testing.T) {
 		t.Fatal("expected 1 item, got", len(outAddr))
 	}
 
-	if outAddr[0] != (Address{1}) {
-		t.Errorf("expected %x, got %x", Address{1}, outAddr[0])
+	if outAddr[0] != (interpret.Address{1}) {
+		t.Errorf("expected %x, got %x", interpret.Address{1}, outAddr[0])
 	}
 
 	// marshal multiple address slice
 	buff.Reset()
-	buff.Write(Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000040")) // offset
-	buff.Write(Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000080")) // offset
-	buff.Write(Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001")) // size
-	buff.Write(Hex2Bytes("0000000000000000000000000100000000000000000000000000000000000000"))
-	buff.Write(Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000002")) // size
-	buff.Write(Hex2Bytes("0000000000000000000000000200000000000000000000000000000000000000"))
-	buff.Write(Hex2Bytes("0000000000000000000000000300000000000000000000000000000000000000"))
+	buff.Write(interpret.HexToBytes("0000000000000000000000000000000000000000000000000000000000000040")) // offset
+	buff.Write(interpret.HexToBytes("0000000000000000000000000000000000000000000000000000000000000080")) // offset
+	buff.Write(interpret.HexToBytes("0000000000000000000000000000000000000000000000000000000000000001")) // size
+	buff.Write(interpret.HexToBytes("0000000000000000000000000100000000000000000000000000000000000000"))
+	buff.Write(interpret.HexToBytes("0000000000000000000000000000000000000000000000000000000000000002")) // size
+	buff.Write(interpret.HexToBytes("0000000000000000000000000200000000000000000000000000000000000000"))
+	buff.Write(interpret.HexToBytes("0000000000000000000000000300000000000000000000000000000000000000"))
 
 	var outAddrStruct struct {
-		A []Address
-		B []Address
+		A []interpret.Address
+		B []interpret.Address
 	}
 	err = abi.Unpack(&outAddrStruct, "addressSliceDouble", buff.Bytes())
 	if err != nil {
@@ -1145,24 +1144,24 @@ func TestUnmarshal(t *testing.T) {
 		t.Fatal("expected 1 item, got", len(outAddrStruct.A))
 	}
 
-	if outAddrStruct.A[0] != (Address{1}) {
-		t.Errorf("expected %x, got %x", Address{1}, outAddrStruct.A[0])
+	if outAddrStruct.A[0] != (interpret.Address{1}) {
+		t.Errorf("expected %x, got %x", interpret.Address{1}, outAddrStruct.A[0])
 	}
 
 	if len(outAddrStruct.B) != 2 {
 		t.Fatal("expected 1 item, got", len(outAddrStruct.B))
 	}
 
-	if outAddrStruct.B[0] != (Address{2}) {
-		t.Errorf("expected %x, got %x", Address{2}, outAddrStruct.B[0])
+	if outAddrStruct.B[0] != (interpret.Address{2}) {
+		t.Errorf("expected %x, got %x", interpret.Address{2}, outAddrStruct.B[0])
 	}
-	if outAddrStruct.B[1] != (Address{3}) {
-		t.Errorf("expected %x, got %x", Address{3}, outAddrStruct.B[1])
+	if outAddrStruct.B[1] != (interpret.Address{3}) {
+		t.Errorf("expected %x, got %x", interpret.Address{3}, outAddrStruct.B[1])
 	}
 
 	// marshal invalid address slice
 	buff.Reset()
-	buff.Write(Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000100"))
+	buff.Write(interpret.HexToBytes("0000000000000000000000000000000000000000000000000000000000000100"))
 
 	err = abi.Unpack(&outAddr, "addressSliceSingle", buff.Bytes())
 	if err == nil {

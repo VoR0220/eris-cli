@@ -18,18 +18,18 @@ func FromHex(s string) []byte {
 		if len(s)%2 == 1 {
 			s = "0" + s
 		}
-		return Hex2Bytes(s)
+		return HexToBytes(s)
 	}
 	return nil
 }
 
-func Hex2Bytes(str string) []byte {
+func HexToBytes(str string) []byte {
 	h, _ := hex.DecodeString(str)
 
 	return h
 }
 
-func Bytes2Hex(d []byte) string {
+func BytesToHex(d []byte) string {
 	return hex.EncodeToString(d)
 }
 

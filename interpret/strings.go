@@ -5,7 +5,7 @@ func LeftPadString(str string, l int) string {
 		return str
 	}
 
-	zeros := Bytes2Hex(make([]byte, (l-len(str))/2))
+	zeros := BytesToHex(make([]byte, (l-len(str))/2))
 
 	return zeros + str
 
@@ -16,7 +16,7 @@ func RightPadString(str string, l int) string {
 		return str
 	}
 
-	zeros := Bytes2Hex(make([]byte, (l-len(str))/2))
+	zeros := BytesToHex(make([]byte, (l-len(str))/2))
 
 	return str + zeros
 }

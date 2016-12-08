@@ -83,7 +83,7 @@ func addJobResultsToMap(jobs *Jobs) (*Jobs, error) {
 	}
 }
 
-var jobMap map[string]*JobResults {
+var jobMap = map[string]*JobResults {
 	"testFalse": {
 		StringResult: "false",
 		Result: false,
@@ -197,7 +197,7 @@ func TestPreProcessingTypes(t *testing.T) {
 			var v interface{}
 			v, err := preprocess(test.toTest, jobs)
 		case "deploy":
-			
+
 		case "call":
 		default :
 			t.Errorf("unsupported assignment type.")
