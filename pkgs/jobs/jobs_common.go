@@ -8,8 +8,10 @@ type Jobs struct {
 }
 
 type JobResults struct {
-	// Full Result
-	JobResult string
+	// Human readable result
+	StringResult string
+	// Actual result
+	Result interface{}
 	// Map of job name to results
 	JobVars map[string]string
 }

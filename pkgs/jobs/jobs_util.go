@@ -17,6 +17,6 @@ type Set struct {
 	// this is useful to set variables which can be used throughout the epm definition file.
 	// It should be noted that arrays and bools must be defined using strings as such "[1,2,3]"
 	// if they are intended to be used further in a assert job.
-	Value string `mapstructure:"val" json:"val" yaml:"val" toml:"val"`
+	Value interface{} `mapstructure:"val" json:"val" yaml:"val" toml:"val"`
 }
 

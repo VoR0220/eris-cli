@@ -16,7 +16,7 @@ type QueryContract struct {
 	Function string `mapstructure:"function" json:"function" yaml:"function" toml:"function"`
 	// (Optional) data to be used in the function arguments. Will use the eris-abi tooling under the hood to formalize the
 	// transaction.
-	Data interface{} `mapstructure:"data" json:"data" yaml:"data" toml:"data"`
+	Data []interface{} `mapstructure:"data" json:"data" yaml:"data" toml:"data"`
 	// (Optional) location of the abi file to use (can be relative path or in abi path)
 	// deployed contracts save ABI artifacts in the abi folder as *both* the name of the contract
 	// and the address where the contract was deployed to
@@ -50,7 +50,7 @@ type QueryVals struct {
 type Assert struct {
 	// (Required) key which should be used for the assertion. This is usually known as the "expected"
 	// value in most testing suites
-	Key string `mapstructure:"key" json:"key" yaml:"key" toml:"key"`
+	Key interface{} `mapstructure:"key" json:"key" yaml:"key" toml:"key"`
 	// (Required) must be of the set ["eq", "ne", "ge", "gt", "le", "lt", "==", "!=", ">=", ">", "<=", "<"]
 	// establishes the relation to be tested by the assertion. If a strings key:value pair is being used
 	// only the equals or not-equals relations may be used as the key:value will try to be converted to
@@ -60,5 +60,5 @@ type Assert struct {
 	// (Required) value which should be used for the assertion. This is usually known as the "given"
 	// value in most testing suites. Generally it will be a variable expansion from one of the query
 	// jobs.
-	Value string `mapstructure:"val" json:"val" yaml:"val" toml:"val"`
+	Value interface{} `mapstructure:"val" json:"val" yaml:"val" toml:"val"`
 }

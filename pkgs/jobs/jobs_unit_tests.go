@@ -83,9 +83,136 @@ func addJobResultsToMap(jobs *Jobs) (*Jobs, error) {
 	}
 }
 
-func TestPreProcessingStrings(t *testing.T) {
+var jobMap map[string]*JobResults {
+	"testFalse": {
+		StringResult: "false",
+		Result: false,
+		JobVars: nil,
+	},
+	"testTrue": {
+		StringResult: "true",
+		Result: true,
+		JobVars: nil,
+	},
+	"testInt": {
+		StringResult: "1",
+		Result: 1,
+		JobVars: nil,
+	},
+	"testString": {
+		StringResult: "Hello",
+		Result: "Hello",
+		JobVars: nil,
+	},
+	"testIntArray": {
+		StringResult: "[1,2,3]",
+		Result: []int{1,2,3},
+		JobVars: nil,
+	},
+	"testBoolArray": {
+		StringResult: "[true,false,true]",
+		Result: []bool{true,false,true},
+		JobVars: nil,
+	},
+	"testStringArray": {
+		StringResult: "[hello,world,marmot]",
+		Result: []string{"hello","world","marmot"},
+		JobVars: nil,
+	},
+	"testLibraryPairs": {
+		StringResult: "libName:01234567890123456789,otherLibName:0123456789123456789",
+		Result: []string{"libName:01234567890123456789","otherLibName:0123456789123456789"},
+		JobVars: nil,
+	},
+	"testRemappingPairs": {
+		StringResult: "github.com/ethereum/dapp-bin/=/usr/local/dapp-bin/,github.com/eris-ltd/monaximus/=/usr/local/marmot/",
+		Result: []string{"github.com/ethereum/dapp-bin/=/usr/local/dapp-bin/","github.com/eris-ltd/monaximus/=/usr/local/marmot/"},
+		JobVars: nil,
+	},
+	"testTupleReturn": {
+		StringResults: `(1, true, "hello")`,
+		Result: []abi.Variable{
+				{
+					Name: "0",
+					Value: "1",
+				},
+				{
+					Name: "1",
+					Value: "true",
+				},
+				{
+					Name: "2",
+					Value: "hello",
+				},
+		},
+		JobVars: {
+			"0": "1",
+			"1": "true",
+			"2": "hello",
+		},
+	},
+	"testDeployFunctions": {
+		StringResults: "01234567890123456789",
+		Result: "01234567890123456789",
+		JobVars: {
+			"f": "012345678901234567891234",
+			"g": "012345678901234567894321",
+			"h": "012345678901234567896789",
+		},
+	},
+}
+// preprocess(toProcess interface{}, mapJobResults map[string]JobResults)
+
+func TestPreProcessingTypes(t *testing.T) {
 	jobs, err := loadJobsForTesting(testPreProcessingConfig)
 	if err != nil {
 		t.Fatalf("could not load jobs: %v", err)
+	}
+	for _, test := range []struct {
+		Assign string
+		toTest string
+		err string
+	}{
+	}{
+		switch test.Assign {
+		case "int":
+			var v int
+			v, err := preprocess(test.toTest, jobs)
+		case "bool":
+			var v bool
+			v, err := preprocess(test.toTest, jobs)
+		case "string":
+			var v string
+			v, err := preprocess(test.toTest, jobs)
+		case "intSlice":
+			var v []int
+			v, err := preprocess(test.toTest, jobs)
+		case "boolSlice":
+			var v []bool
+			v, err := preprocess(test.toTest, jobs)
+		case "stringSlice":
+			var v []string
+			v, err := preprocess(test.toTest, jobs)
+		case "interface":
+			var v interface{}
+			v, err := preprocess(test.toTest, jobs)
+		case "deploy":
+			
+		case "call":
+		default :
+			t.Errorf("unsupported assignment type.")
+		}
+		if err != nil && len(test.err) == 0 {
+			t.Errorf("%d failed. Expected no err but got: %v", i, err)
+			continue
+		}
+		if err == nil && len(test.err) != 0 {
+			t.Errorf("%d failed. Expected err: %v but got none", i, test.err)
+			continue
+		}
+		if err != nil && len(test.err) != 0 && err.Error() != test.err {
+			t.Errorf("%d failed. Expected err: '%v' got err: '%v'", i, test.err, err)
+			continue
+		}
 	}
 }
