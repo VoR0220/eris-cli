@@ -51,7 +51,8 @@ import:
   version: 1f49d83d9aa00e6ce4fc8258c71cc7786aec968a
   subpackages:
   - proto
-- package: github.com/eris-ltd/eris-logger
+- package: github.com/bugsnag/osext
+  version: 0dd3f918b21bec95ace9dc86c7e70266cfc5c702
 testImport:
 - package: github.com/stretchr/testify
   subpackages:

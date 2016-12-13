@@ -1,5 +1,5 @@
-hash: 11bab1277917644b6a59ae96cc39cf170e3b21362253fdaa3b313e4cb751bfa5
-updated: 2016-12-13T12:34:43.793622303-06:00
+hash: 45a21cbbb94f8e74e52ed20c852bfe8482c8989dd9878ff3c74848d30de8c264
+updated: 2016-12-13T12:45:41.105803178-06:00
 imports:
 - name: github.com/Azure/go-ansiterm
   version: fa152c58bc15761d0200cb75fe958b89a9d4888e
@@ -15,6 +15,8 @@ imports:
   version: 718a5c3648c101c24adc20b7d3fe0be7af35a17a
   subpackages:
   - errors
+- name: github.com/bugsnag/osext
+  version: 0dd3f918b21bec95ace9dc86c7e70266cfc5c702
 - name: github.com/bugsnag/panicwrap
   version: aa7703c9414b36d4e9b2e42e6c704d0bfae7db64
 - name: github.com/BurntSushi/toml
