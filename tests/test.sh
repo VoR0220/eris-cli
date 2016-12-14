@@ -55,7 +55,7 @@ BRANCH=${BRANCH/\//_}
 declare -a MACHINES
 declare -a MACH_RESULTS=()
 
-# Define now the tool tests within the Docker container will be booted from docker run
+# Define how the tool tests within the Docker container will be booted from docker run
 entrypoint="/home/eris/test_tool.sh"
 testimage=quay.io/eris/eris
 testuser=eris

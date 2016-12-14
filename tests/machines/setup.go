@@ -178,6 +178,7 @@ func startMachine(machine string, failOut chan<- bool) {
 
 func makeMachine(machine string) error {
 	var cmd *exec.Cmd
+	fmt.Printf("Creating machine %v\n", machine)
 	cmd = exec.Command("docker-machine", "create", "--driver", dmDriver, "--amazonec2-access-key", vars["akey"], "--amazonec2-secret-key", vars["asec"], "--amazonec2-region", vars["areg"], "--amazonec2-vpc-id", vars["avpc"], "--amazonec2-security-group", vars["agrp"], "--amazonec2-zone", vars["azon"], machine)
 	var out bytes.Buffer
 	cmd.Stdout = &out
