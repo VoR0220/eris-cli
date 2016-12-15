@@ -2,6 +2,10 @@ package pkgs
 
 import (
 	"fmt"
+	"net/url"
+	"os"
+	"runtime"
+	"strings"
 
 	"github.com/eris-ltd/eris-cli/definitions"
 	"github.com/eris-ltd/eris-cli/loaders"
@@ -11,12 +15,10 @@ import (
 )
 
 func RunPackage(do *definitions.Do) error {
-	if err := getChainIP(do); err != nil {
+	if err := getChainIPandURL(do); err != nil {
 		return err
 	}
 
-	// TODO flexible port
-	do.ChainURL = fmt.Sprintf("tcp://%s:%s", do.ChainIP, "46657")
 	if err := util.GetChainID(do); err != nil {
 		return err
 	}
@@ -40,20 +42,35 @@ func RunPackage(do *definitions.Do) error {
 	return jobs.RunJobs(do)
 }
 
-func getChainIP(do *definitions.Do) error {
+func getChainIPandURL(do *definitions.Do) error {
 
 	if !util.IsChain(do.ChainName, true) {
 		return fmt.Errorf("chain (%s) is not running", do.ChainName)
 	}
 
-	containerName := util.ContainerName(definitions.TypeChain, do.ChainName)
+	if runtime.GOOS == "windows" || runtime.GOOS == "darwin" {
+		dockerHost := os.Getenv("DOCKER_HOST")
+		port := strings.LastIndex(dockerHost, ":")
+		do.ChainIP = dockerHost[:port]
+		chainURL, err := url.Parse(do.ChainIP)
+		if err != nil {
+			return err
+		}
+		chainURL.Scheme = "tcp"
+		do.ChainURL = fmt.Sprintf("%s:%s", chainURL.String(), "46657")
+	} else {
+		containerName := util.ContainerName(definitions.TypeChain, do.ChainName)
 
-	cont, err := util.DockerClient.InspectContainer(containerName)
-	if err != nil {
-		return util.DockerError(err)
+		cont, err := util.DockerClient.InspectContainer(containerName)
+		if err != nil {
+			return util.DockerError(err)
+		}
+
+		do.ChainIP = cont.NetworkSettings.IPAddress
+
+		// TODO flexible port
+		do.ChainURL = fmt.Sprintf("tcp://%s:%s", do.ChainIP, "46657")
 	}
-
-	do.ChainIP = cont.NetworkSettings.IPAddress
 
 	return nil
 }
