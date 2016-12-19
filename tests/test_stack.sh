@@ -46,11 +46,6 @@ export ERIS_PULL_APPROVE="true"
 export ERIS_MIGRATE_APPROVE="true"
 export SKIP_BUILD="true"
 
-ecm=eris-cm
-ecm_repo=https://github.com/eris-ltd/$ecm.git
-ecm_dir=$repo/../$ecm
-ecm_branch=${ECM_BRANCH:=master}
-
 # ----------------------------------------------------------------------------
 # Utility functions
 
@@ -63,24 +58,9 @@ check_and_exit() {
 }
 
 # ----------------------------------------------------------------------------
-# Get ECM
-
-echo
-if [ -d "$ecm_dir" ]; then
-  echo "eris-cm present on host; not cloning"
-  cd $ecm_dir
-else
-  echo -e "Cloning eris-cm to:\t\t$ecm_dir:$ecm_branch"
-  git clone $ecm_repo $ecm_dir &>/dev/null
-  cd $ecm_dir 1>/dev/null
-  git checkout origin/$ecm_branch &>/dev/null
-fi
-echo
-
-# ----------------------------------------------------------------------------
 # Run ECM tests
 
-tests/test.sh
+tests/test_chains_make.sh
 test_exit=$?
 check_and_exit
 cd $start
