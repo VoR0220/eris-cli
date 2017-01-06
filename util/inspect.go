@@ -217,3 +217,14 @@ func writeTemplate(container interface{}, toParse string) error {
 func startsUp(field string) bool {
 	return unicode.IsUpper([]rune(field)[0])
 }
+<<<<<<< HEAD
+=======
+
+// a checker for building tables cf. listing funcs
+func checkParts(parts []string) error {
+	if len(parts) != 5 {
+		return fmt.Errorf("part length !=5")
+	}
+	return nil
+}
+>>>>>>> pkgs: flexible port; use 46657 anyways, it works

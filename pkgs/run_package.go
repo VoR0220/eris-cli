@@ -2,6 +2,7 @@ package pkgs
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/eris-ltd/eris-cli/definitions"
 	"github.com/eris-ltd/eris-cli/loaders"
@@ -55,6 +56,14 @@ func setChainIPandPort(do *definitions.Do) error {
 
 	do.ChainIP = cont.NetworkSettings.IPAddress
 	do.ChainPort = "46657" // [zr] this can be hardcoded even if [--publish] is used
+
+	// get the port
+	chainPortRaw := util.ParsePortMappings(cont.NetworkSettings.Ports, []string{"46657"})
+	do.ChainPort = strings.Split(chainPortRaw, ":")[1] // chainPortRaw comes out as 0.0.0.0:35487
+
+	// [zr] override & hardcode => connection to edb refused on "correct" port but contract deploy
+	// works on a chain that was started with [--publish]
+	do.ChainPort = "46657"
 
 	return nil
 }
