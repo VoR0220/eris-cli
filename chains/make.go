@@ -6,10 +6,11 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/eris-ltd/eris-cli/chains/maker"
 	"github.com/eris-ltd/eris-cli/config"
 	"github.com/eris-ltd/eris-cli/definitions"
+	"github.com/eris-ltd/eris-cli/loaders"
 	"github.com/eris-ltd/eris-cli/log"
-	"github.com/eris-ltd/eris-cli/maker"
 	"github.com/eris-ltd/eris-cli/services"
 	"github.com/eris-ltd/eris-cli/util"
 
@@ -45,7 +46,7 @@ func MakeChain(do *definitions.Do) error {
 
 	// announce.
 	log.Info("Hello! I'm the marmot who makes eris chains.")
-	keys.DaemonAddr = "http://172.17.0.2:4767" // tmp
+	keys.DaemonAddr = "http://127.0.0.1:4767" // tmp
 
 	if do.Known {
 		log.Warn("Creating chain from known accounts and validators")
@@ -87,7 +88,7 @@ func MakeChain(do *definitions.Do) error {
 		}
 	}
 	if do.Output {
-		if err := util.SaveAccountResults(do); err != nil {
+		if err := loaders.SaveAccountResults(do); err != nil {
 			return err
 		}
 	}

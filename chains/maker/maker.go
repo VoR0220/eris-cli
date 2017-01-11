@@ -19,6 +19,8 @@ var (
 )
 
 func MakeChain(do *definitions.Do) error {
+	//todo: [rj] makeRaw needs to be modified so that multiple paradigms are able to be used at once
+	// function signature should look like makeRaw(whateverReplacesDo, string...)
 	switch {
 	case len(do.AccountTypes) != 0:
 		log.Info("Making chain using account type paradigm.")
@@ -170,7 +172,7 @@ func addManualAccountType(accountT []*definitions.ErisDBAccountType, iterator in
 	name, err := util.GetStringResponse(AccountTypeManualSave(), "", reader)
 	if name != "" {
 		thisActT.Name = name
-		if err := util.SaveAccountType(thisActT); err != nil {
+		if err := loaders.SaveAccountType(thisActT); err != nil {
 			return nil, err
 		}
 	}
