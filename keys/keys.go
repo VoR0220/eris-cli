@@ -15,9 +15,21 @@ import (
 	"github.com/eris-ltd/eris-cli/services"
 )
 
-func ListKeys(do *definitions.Do) ([]string, error) {
+type KeyClient struct {
+	IpAddr string
+}
+
+func initKeyClient() (*KeyClient, error) {
+	keys := &KeyClient{}
+	err := keys.ensureRunning()
+	if err != nil {
+		return nil, err
+	}
+}
+
+func (keys *KeyClient) ListKeys(host, container, quiet bool) ([]string, error) {
 	var result []string
-	if do.Host {
+	if host {
 		keysPath := filepath.Join(config.KeysPath, "data")
 		addrs, err := ioutil.ReadDir(keysPath)
 		if err != nil {
@@ -26,7 +38,7 @@ func ListKeys(do *definitions.Do) ([]string, error) {
 		for _, addr := range addrs {
 			result = append(result, addr.Name())
 		}
-		if !do.Quiet {
+		if !quiet {
 			if len(addrs) == 0 {
 				log.Warn("No keys found on host")
 			} else {
@@ -42,18 +54,18 @@ func ListKeys(do *definitions.Do) ([]string, error) {
 		}
 	}
 
-	if do.Container {
-		do.Name = "keys"
-		if err := services.EnsureRunning(do); err != nil {
+	if container {
+		err := keys.ensureRunning()
+		if err != nil {
 			return nil, err
 		}
 
-		keysOut, err := services.ExecHandler(do.Name, []string{"ls", "/home/eris/.eris/keys/data"})
+		keysOut, err := services.ExecHandler("keys", []string{"ls", "/home/eris/.eris/keys/data"})
 		if err != nil {
 			return nil, err
 		}
 		result = strings.Fields(keysOut.String())
-		if !do.Quiet {
+		if !quiet {
 			if len(result) == 0 || result[0] == "" {
 				log.Warn("No keys found in container")
 			} else {
@@ -71,21 +83,26 @@ func ListKeys(do *definitions.Do) ([]string, error) {
 	return result, nil
 }
 
-func GenerateKey(do *definitions.Do) error {
-	do.Name = "keys"
-
-	if err := services.EnsureRunning(do); err != nil {
-		return err
-	}
-	// TODO implement
-	// if do.Password {}
-
-	buf, err := services.ExecHandler(do.Name, []string{"eris-keys", "gen", "--no-pass"})
+func (keys *KeyClient) GenerateKey(save bool, password string) error {
+	err := keys.ensureRunning()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	if do.Save {
+	buf := new(bytes.Buffer)
+	if password != "" {
+		buf, err = services.ExecHandler("keys", []string{"eris-keys", "gen", "--no-pass"})
+		if err != nil {
+			return err
+		}
+	} else {
+		buf, err = services.ExecHandler("keys", []string{"eris-keys", "gen", "--no-pass"})
+		if err != nil {
+			return err
+		}
+	}
+
+	if save {
 		addr := new(bytes.Buffer)
 		addr.ReadFrom(buf)
 
@@ -93,7 +110,7 @@ func GenerateKey(do *definitions.Do) error {
 		doExport.Address = strings.TrimSpace(addr.String())
 
 		log.WithField("=>", doExport.Address).Warn("Saving key to host")
-		if err := ExportKey(doExport); err != nil {
+		if err := keys.ExportKey(doExport); err != nil {
 			return err
 		}
 	}
@@ -103,13 +120,13 @@ func GenerateKey(do *definitions.Do) error {
 	return nil
 }
 
-func ExportKey(do *definitions.Do) error {
-	do.Name = "keys"
-	if err := services.EnsureRunning(do); err != nil {
-		return err
+func (keys *KeyClient) ExportKey(address string) error {
+	err := keys.ensureRunning()
+	if err != nil {
+		return nil, err
 	}
 
-	if do.All && do.Address == "" {
+	if do.All && address == "" {
 		do.Destination = config.KeysPath
 		do.Source = path.Join(config.KeysContainerPath)
 	} else {
@@ -119,22 +136,23 @@ func ExportKey(do *definitions.Do) error {
 	return data.ExportData(do)
 }
 
-func ImportKey(do *definitions.Do) error {
-	do.Name = "keys"
-	if err := services.EnsureRunning(do); err != nil {
-		return err
+func (keys *KeyClient) ImportKey(address string, all bool) error {
+	err := keys.ensureRunning()
+	if err != nil {
+		return nil, err
 	}
 
-	if do.All && do.Address == "" {
-		doLs := definitions.NowDo()
-		doLs.Container = false
-		doLs.Host = true
-		doLs.Quiet = true
-		result, err := ListKeys(doLs)
+	if all && address == "" {
+		// get all keys from host
+		result, err := ListKeys(true, false, true)
 		if err != nil {
 			return err
 		}
-
+		// flip them for the import
+		do := definitions.NowDo()
+		do.Container = true
+		do.Host = false
+		do.Quiet = false
 		for _, addr := range result {
 			do.Source = filepath.Join(config.KeysDataPath, addr)
 			do.Destination = path.Join(config.KeysContainerPath, addr)
@@ -151,4 +169,26 @@ func ImportKey(do *definitions.Do) error {
 	}
 
 	return nil
+}
+
+func (keys *KeyClient) ensureRunning() (err error) {
+	doKeys := definitions.NowDo()
+	doKeys.Name = "keys"
+	err = services.EnsureRunning(doKeys)
+	return
+}
+
+func (keys *KeyClient) PubKey(address string) (string, error) {
+	err := keys.ensureRunning()
+	if err != nil {
+		return nil, err
+	}
+
+	addr := strings.TrimSpace(address)
+	buf, err := services.ExecHandler("keys", []string{"eris-keys", "pub", "--addr", addr, "--name", ""})
+	if err != nil {
+		return "", err
+	}
+
+	return strings.TrimSpace(buf.String()), nil
 }

@@ -77,7 +77,7 @@ Latter flag is equivalent to: [eris services exec keys "ls /home/eris/.eris/keys
 func addKeysFlags() {
 	// [zr] eventually we'll want to flip (both?) these bools. definitely the latter, probably the former
 	keysGen.Flags().BoolVarP(&do.Save, "save", "", false, "export the key to host following creation")
-	//keysGen.Flags().BoolVarP(&do.Password, "passwd", "", false, "require a password prompt to generate the key")
+	//keysGen.Flags().BoolVarP(&do.Password, "pass", "", false, "require a password prompt to generate the key")
 
 	keysExport.Flags().StringVarP(&do.Address, "addr", "", "", "address of key to export")
 	keysExport.Flags().BoolVarP(&do.All, "all", "", false, "export all keys. do not provide any arguments")
