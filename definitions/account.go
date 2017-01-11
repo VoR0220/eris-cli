@@ -1,11 +1,11 @@
 package definitions
 
 type ErisDBAccount struct {
-	Name    string `mapstructure:"," json:"," yaml:"," toml:","`
-	Address string `mapstructure:"," json:"," yaml:"," toml:","`
-	PubKey  string `mapstructure:"," json:"," yaml:"," toml:","`
-	Tokens  int    `mapstructure:"," json:"," yaml:"," toml:","`
-	ToBond  int    `mapstructure:"," json:"," yaml:"," toml:","`
+	Name    string `mapstructure:"name" json:"name"`
+	Address string `mapstructure:"address" json:"address"`
+	PubKey  string `mapstructure:"" json:","`
+	Tokens  int    `mapstructure:"," json:","`
+	ToBond  int    `mapstructure:"," json:","`
 
 	// [zr] from definitions/erisdb_chains.go
 	//Address     string                    `json:"address"`

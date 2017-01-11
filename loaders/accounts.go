@@ -1,4 +1,4 @@
-package maker
+package loaders
 
 import (
 	"fmt"
@@ -42,24 +42,6 @@ func LoadAccountType(fileName string) (*definitions.ErisDBAccountType, error) {
 	// marshall file
 	if err := accountType.Unmarshal(typ); err != nil {
 		return nil, fmt.Errorf("\nSorry, the marmots could not figure that account types file out.\nPlease check your account type definition file is properly formatted.\nERROR =>\t\t\t%v", err)
-	}
-
-	return typ, nil
-}
-
-func LoadChainTypes(fileName string) (*definitions.ChainType, error) {
-	fileName = filepath.Join(config.ChainTypePath, fileName)
-	log.WithField("file name", fileName).Info("Loading Chain Definition.")
-	var typ = definitions.BlankChainType()
-	var chainType = viper.New()
-
-	if err := getSetup(fileName, chainType); err != nil {
-		return nil, err
-	}
-
-	// marshall file
-	if err := chainType.Unmarshal(typ); err != nil {
-		return nil, fmt.Errorf("\nSorry, the marmots could not figure that chain types file out.\nPlease check your chain type definition file is properly formatted.\nERROR =>\t\t\t%v", err)
 	}
 
 	return typ, nil
