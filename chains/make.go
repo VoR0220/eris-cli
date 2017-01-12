@@ -14,7 +14,6 @@ import (
 	"github.com/eris-ltd/eris-cli/util"
 
 	"github.com/eris-ltd/eris-db/genesis"
-	keys "github.com/eris-ltd/eris-keys/eris-keys"
 )
 
 // TODO [zr] re-write
@@ -45,7 +44,6 @@ func MakeChain(do *definitions.Do) error {
 
 	// announce.
 	log.Info("Hello! I'm the marmot who makes eris chains.")
-	keys.DaemonAddr = "http://172.17.0.2:4767" // tmp
 
 	if do.Known {
 		log.Warn("Creating chain from known accounts and validators")

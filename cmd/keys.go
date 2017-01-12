@@ -95,8 +95,9 @@ func GenerateKey(cmd *cobra.Command, args []string) {
 
 	// TODO implement once we move to using keys client exclusively
 	// if do.Password {}
-
-	util.IfExit(keys.GenerateKey(do))
+	keyClient, err := keys.InitKeyClient()
+	util.IfExit(err)
+	util.IfExit(keyClient.GenerateKey(do.Save, ""))
 }
 
 func ExportKey(cmd *cobra.Command, args []string) {
@@ -105,8 +106,11 @@ func ExportKey(cmd *cobra.Command, args []string) {
 	} else {
 		util.IfExit(ArgCheck(1, "eq", cmd, args))
 		do.Address = strings.TrimSpace(args[0])
+
 	}
-	util.IfExit(keys.ExportKey(do))
+	keyClient, err := keys.InitKeyClient()
+	util.IfExit(err)
+	util.IfExit(keyClient.ExportKey(do.Address, do.All))
 }
 
 func ImportKey(cmd *cobra.Command, args []string) {
@@ -115,16 +119,21 @@ func ImportKey(cmd *cobra.Command, args []string) {
 	} else {
 		util.IfExit(ArgCheck(1, "eq", cmd, args))
 		do.Address = strings.TrimSpace(args[0])
+
 	}
-	util.IfExit(keys.ImportKey(do))
+	keyClient, err := keys.InitKeyClient()
+	util.IfExit(err)
+	util.IfExit(keyClient.ImportKey(do.Address, do.All))
 }
 
 func ListKeys(cmd *cobra.Command, args []string) {
 	util.IfExit(ArgCheck(0, "eq", cmd, args))
+	keyClient, err := keys.InitKeyClient()
 	if !do.Host && !do.Container {
-		do.Host = true
-		do.Container = true
+		// search on both
+		_, err = keyClient.ListKeys(true, true, do.Quiet)
+	} else {
+		_, err = keyClient.ListKeys(do.Host, do.Container, do.Quiet)
 	}
-	_, err := keys.ListKeys(do)
 	util.IfExit(err)
 }

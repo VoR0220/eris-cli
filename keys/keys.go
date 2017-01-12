@@ -2,10 +2,12 @@ package keys
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/eris-ltd/eris-cli/config"
@@ -13,18 +15,28 @@ import (
 	"github.com/eris-ltd/eris-cli/definitions"
 	"github.com/eris-ltd/eris-cli/log"
 	"github.com/eris-ltd/eris-cli/services"
+
+	eKeys "github.com/eris-ltd/eris-keys/eris-keys"
 )
 
 type KeyClient struct {
 	IpAddr string
 }
 
-func initKeyClient() (*KeyClient, error) {
+func InitKeyClient() (*KeyClient, error) {
 	keys := &KeyClient{}
 	err := keys.ensureRunning()
 	if err != nil {
 		return nil, err
 	}
+	if runtime.GOOS == "darwin" {
+		eKeys.DaemonAddr = "http://127.0.0.1:4767"
+		keys.IpAddr = "http://127.0.0.1:4767"
+	} else {
+		eKeys.DaemonAddr = "http://172.17.0.2:4767"
+		keys.IpAddr = "http://172.17.0.2:4767"
+	}
+	return keys, nil
 }
 
 func (keys *KeyClient) ListKeys(host, container, quiet bool) ([]string, error) {
@@ -86,15 +98,12 @@ func (keys *KeyClient) ListKeys(host, container, quiet bool) ([]string, error) {
 func (keys *KeyClient) GenerateKey(save bool, password string) error {
 	err := keys.ensureRunning()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	buf := new(bytes.Buffer)
 	if password != "" {
-		buf, err = services.ExecHandler("keys", []string{"eris-keys", "gen", "--no-pass"})
-		if err != nil {
-			return err
-		}
+		return fmt.Errorf("Password currently unimplemented. Marmots are confused at how you got here.")
 	} else {
 		buf, err = services.ExecHandler("keys", []string{"eris-keys", "gen", "--no-pass"})
 		if err != nil {
@@ -106,11 +115,10 @@ func (keys *KeyClient) GenerateKey(save bool, password string) error {
 		addr := new(bytes.Buffer)
 		addr.ReadFrom(buf)
 
-		doExport := definitions.NowDo()
-		doExport.Address = strings.TrimSpace(addr.String())
+		exportAddress := strings.TrimSpace(addr.String())
 
-		log.WithField("=>", doExport.Address).Warn("Saving key to host")
-		if err := keys.ExportKey(doExport); err != nil {
+		log.WithField("=>", exportAddress).Warn("Saving key to host")
+		if err := keys.ExportKey(exportAddress, false); err != nil {
 			return err
 		}
 	}
@@ -120,13 +128,13 @@ func (keys *KeyClient) GenerateKey(save bool, password string) error {
 	return nil
 }
 
-func (keys *KeyClient) ExportKey(address string) error {
+func (keys *KeyClient) ExportKey(address string, all bool) error {
 	err := keys.ensureRunning()
 	if err != nil {
-		return nil, err
+		return err
 	}
-
-	if do.All && address == "" {
+	do := definitions.NowDo()
+	if all && address == "" {
 		do.Destination = config.KeysPath
 		do.Source = path.Join(config.KeysContainerPath)
 	} else {
@@ -139,17 +147,17 @@ func (keys *KeyClient) ExportKey(address string) error {
 func (keys *KeyClient) ImportKey(address string, all bool) error {
 	err := keys.ensureRunning()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
+	do := definitions.NowDo()
 	if all && address == "" {
 		// get all keys from host
-		result, err := ListKeys(true, false, true)
+		result, err := keys.ListKeys(true, false, true)
 		if err != nil {
 			return err
 		}
 		// flip them for the import
-		do := definitions.NowDo()
 		do.Container = true
 		do.Host = false
 		do.Quiet = false
@@ -181,7 +189,7 @@ func (keys *KeyClient) ensureRunning() (err error) {
 func (keys *KeyClient) PubKey(address string) (string, error) {
 	err := keys.ensureRunning()
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	addr := strings.TrimSpace(address)
