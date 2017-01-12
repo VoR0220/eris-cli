@@ -5,7 +5,7 @@ import (
 	"github.com/eris-ltd/eris-cli/log"
 	"github.com/eris-ltd/eris-cli/util"
 
-	"github.com/eris-cli/keys"
+	"github.com/eris-ltd/eris-cli/keys"
 )
 
 func SetAccountJob(account *definitions.Account, do *definitions.Do) (string, error) {
@@ -20,7 +20,7 @@ func SetAccountJob(account *definitions.Account, do *definitions.Do) (string, er
 	log.WithField("=>", do.Package.Account).Info("Setting Account")
 
 	// Set the public key from eris-keys
-	keyClient, err = keys.InitKeyClient()
+	keyClient, err := keys.InitKeyClient()
 	if err != nil {
 		return util.KeysErrorHandler(do, err)
 	}
