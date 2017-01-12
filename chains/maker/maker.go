@@ -19,8 +19,6 @@ var (
 )
 
 func MakeChain(do *definitions.Do) error {
-	//todo: [rj] makeRaw needs to be modified so that multiple paradigms are able to be used at once
-	// function signature should look like makeRaw(whateverReplacesDo, string...)
 	switch {
 	case len(do.AccountTypes) != 0:
 		log.Info("Making chain using account type paradigm.")
@@ -87,6 +85,8 @@ func makeWizard(do *definitions.Do) error {
 	return maker(do, "mint", accountTypes)
 }
 
+// todo: [rj] makeRaw needs to be modified so that multiple paradigms are able to be used at once
+// function signature should look like makeRaw(whateverReplacesDo, string...)
 func makeRaw(do *definitions.Do, typ string) error {
 	accountTypes, err := loaders.LoadAccountTypes()
 	if err != nil {
