@@ -9,6 +9,7 @@ import (
 	"github.com/eris-ltd/eris-cli/definitions"
 	"github.com/eris-ltd/eris-cli/log"
 	"github.com/eris-ltd/eris-cli/util"
+	"github.com/eris-ltd/eris-cli/writers"
 
 	"github.com/eris-ltd/eris-db/client"
 	"github.com/eris-ltd/eris-db/client/core"
@@ -113,7 +114,7 @@ func RegisterNameJob(name *definitions.RegisterName, do *definitions.Do) (string
 
 			n := fmt.Sprintf("%s:%s", record[0], record[1])
 			// TODO: fix this... simple and naive result just now.
-			if err = util.WriteJobResultCSV(n, r); err != nil {
+			if err = writers.WriteJobResultCSV(n, r); err != nil {
 				log.Error("ERROR =>")
 				return "", err
 			}

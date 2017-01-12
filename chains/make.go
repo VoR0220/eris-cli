@@ -9,10 +9,10 @@ import (
 	"github.com/eris-ltd/eris-cli/chains/maker"
 	"github.com/eris-ltd/eris-cli/config"
 	"github.com/eris-ltd/eris-cli/definitions"
-	"github.com/eris-ltd/eris-cli/loaders"
 	"github.com/eris-ltd/eris-cli/log"
 	"github.com/eris-ltd/eris-cli/services"
 	"github.com/eris-ltd/eris-cli/util"
+	"github.com/eris-ltd/eris-cli/writers"
 
 	"github.com/eris-ltd/eris-db/genesis"
 	keys "github.com/eris-ltd/eris-keys/eris-keys"
@@ -88,7 +88,7 @@ func MakeChain(do *definitions.Do) error {
 		}
 	}
 	if do.Output {
-		if err := loaders.SaveAccountResults(do); err != nil {
+		if err := writers.SaveAccountResults(do); err != nil {
 			return err
 		}
 	}

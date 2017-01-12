@@ -11,6 +11,7 @@ import (
 	"github.com/eris-ltd/eris-cli/loaders"
 	"github.com/eris-ltd/eris-cli/log"
 	"github.com/eris-ltd/eris-cli/util"
+	"github.com/eris-ltd/eris-cli/writers"
 )
 
 var (
@@ -172,7 +173,7 @@ func addManualAccountType(accountT []*definitions.ErisDBAccountType, iterator in
 	name, err := util.GetStringResponse(AccountTypeManualSave(), "", reader)
 	if name != "" {
 		thisActT.Name = name
-		if err := loaders.SaveAccountType(thisActT); err != nil {
+		if err := writers.SaveAccountType(thisActT); err != nil {
 			return nil, err
 		}
 	}

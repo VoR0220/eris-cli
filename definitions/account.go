@@ -6,10 +6,11 @@ type ErisDBAccount struct {
 	Amount      int                       `mapstructure:"amount" json:"amount"`
 	Permissions *ErisDBAccountPermissions `mapstructure:"permissions" json:"permissions"`
 
-	Validator         bool
-	PermissionsMap    map[string]int
-	ErisDBPermissions *ErisDBAccountPermissions
-	MintKey           *MintPrivValidator
-	PubKey            string
-	ToBond            int
+	//ignored fields
+	Validator         bool                      `json:"-"`
+	PermissionsMap    map[string]int            `json:"-"`
+	ErisDBPermissions *ErisDBAccountPermissions `json:"-"`
+	MintKey           *MintPrivValidator        `json:"-"`
+	PubKey            string                    `json:"-"`
+	ToBond            int                       `json:"-"`
 }

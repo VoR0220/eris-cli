@@ -7,6 +7,7 @@ import (
 	"github.com/eris-ltd/eris-cli/definitions"
 	"github.com/eris-ltd/eris-cli/log"
 	"github.com/eris-ltd/eris-cli/util"
+	"github.com/eris-ltd/eris-cli/writers"
 )
 
 func RunJobs(do *definitions.Do) error {
@@ -170,7 +171,7 @@ func postProcess(do *definitions.Do) error {
 	case "csv":
 		log.Info("Writing [epm.csv] to current directory")
 		for _, job := range do.Package.Jobs {
-			if err := util.WriteJobResultCSV(job.JobName, job.JobResult); err != nil {
+			if err := writers.WriteJobResultCSV(job.JobName, job.JobResult); err != nil {
 				return err
 			}
 		}
@@ -180,7 +181,7 @@ func postProcess(do *definitions.Do) error {
 		for _, job := range do.Package.Jobs {
 			results[job.JobName] = job.JobResult
 		}
-		return util.WriteJobResultJSON(results)
+		return writers.WriteJobResultJSON(results)
 	}
 
 	return nil

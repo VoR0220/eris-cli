@@ -11,6 +11,7 @@ import (
 	"github.com/eris-ltd/eris-cli/pkgs"
 	"github.com/eris-ltd/eris-cli/util"
 	"github.com/eris-ltd/eris-cli/version"
+	"github.com/eris-ltd/eris-cli/writers"
 
 	"github.com/spf13/cobra"
 )
@@ -37,9 +38,9 @@ var packagesDo = &cobra.Command{
 in a package definition file`,
 	PreRun: func(cmd *cobra.Command, args []string) {
 		// clears epm.log file
-		util.ClearJobResults()
+		writers.ClearJobResults()
 
-		util.PrintPathPackage(do)
+		writers.PrintPathPackage(do)
 	},
 	Run: PackagesDo,
 }
