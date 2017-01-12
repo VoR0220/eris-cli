@@ -8,6 +8,7 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 
 	"github.com/eris-ltd/eris-cli/config"
@@ -23,6 +24,8 @@ type KeyClient struct {
 	IpAddr string
 }
 
+// Returns an initialized key client to a docker container
+// running the keys server
 func InitKeyClient() (*KeyClient, error) {
 	keys := &KeyClient{}
 	err := keys.ensureRunning()
@@ -39,6 +42,11 @@ func InitKeyClient() (*KeyClient, error) {
 	return keys, nil
 }
 
+// Keyclient returns a list of keys that it is aware of.
+// params:
+// host - search for keys on the host
+// container - search for keys on the container
+// quiet - don't print output, just return the list you find
 func (keys *KeyClient) ListKeys(host, container, quiet bool) ([]string, error) {
 	var result []string
 	if host {
@@ -95,6 +103,10 @@ func (keys *KeyClient) ListKeys(host, container, quiet bool) ([]string, error) {
 	return result, nil
 }
 
+// Keyclient generates a key.
+// params:
+// save - whether or not to export it from container to host when we're done generating
+// password - not implemented yet
 func (keys *KeyClient) GenerateKey(save bool, password string) error {
 	err := keys.ensureRunning()
 	if err != nil {
@@ -128,6 +140,10 @@ func (keys *KeyClient) GenerateKey(save bool, password string) error {
 	return nil
 }
 
+// Keyclient exports keys from container to host.
+// params:
+// address - address to export single key
+// all - bool that says export all the keys
 func (keys *KeyClient) ExportKey(address string, all bool) error {
 	err := keys.ensureRunning()
 	if err != nil {
@@ -137,6 +153,8 @@ func (keys *KeyClient) ExportKey(address string, all bool) error {
 	if all && address == "" {
 		do.Destination = config.KeysPath
 		do.Source = path.Join(config.KeysContainerPath)
+	} else if all && address != "" {
+		return fmt.Errorf("Dev implementation error: Cannot import both all and a single address: %v", address)
 	} else {
 		do.Destination = config.KeysDataPath
 		do.Source = path.Join(config.KeysContainerPath, do.Address)
@@ -144,6 +162,10 @@ func (keys *KeyClient) ExportKey(address string, all bool) error {
 	return data.ExportData(do)
 }
 
+// Keyclient imports keys from host to container.
+// params:
+// address - address to import single key
+// all - bool that says import all the keys
 func (keys *KeyClient) ImportKey(address string, all bool) error {
 	err := keys.ensureRunning()
 	if err != nil {
@@ -168,9 +190,11 @@ func (keys *KeyClient) ImportKey(address string, all bool) error {
 				return err
 			}
 		}
+	} else if all && address != "" {
+		return fmt.Errorf("Dev implementation error: Cannot import both all and a single address: %v", address)
 	} else {
-		do.Source = filepath.Join(config.KeysDataPath, do.Address)
-		do.Destination = path.Join(config.KeysContainerPath, do.Address)
+		do.Source = filepath.Join(config.KeysDataPath, address)
+		do.Destination = path.Join(config.KeysContainerPath, address)
 		if err := data.ImportData(do); err != nil {
 			return err
 		}
@@ -179,13 +203,16 @@ func (keys *KeyClient) ImportKey(address string, all bool) error {
 	return nil
 }
 
-func (keys *KeyClient) ensureRunning() (err error) {
+// Helper function used to ensure the keys container is indeed running
+func (keys *KeyClient) ensureRunning() error {
 	doKeys := definitions.NowDo()
 	doKeys.Name = "keys"
-	err = services.EnsureRunning(doKeys)
-	return
+	return services.EnsureRunning(doKeys)
 }
 
+// Keyclient returns the public key of an address.
+// params:
+// address - address whose public key we want to know
 func (keys *KeyClient) PubKey(address string) (string, error) {
 	err := keys.ensureRunning()
 	if err != nil {
@@ -199,4 +226,51 @@ func (keys *KeyClient) PubKey(address string) (string, error) {
 	}
 
 	return strings.TrimSpace(buf.String()), nil
+}
+
+// Keyclient returns a signed message.
+// params:
+// address - address that we wish to sign with
+// msg - the message we wish to sign
+func (keys *KeyClient) SignMsg(address, msg string) (string, error) {
+	err := keys.ensureRunning()
+	if err != nil {
+		return "", err
+	}
+
+	addr := strings.TrimSpace(address)
+	buf, err := services.ExecHandler("keys", []string{"eris-keys", "sign", "--addr", addr, msg})
+	if err != nil {
+		return "", err
+	}
+
+	return strings.TrimSpace(buf.String()), nil
+}
+
+// Keyclient verifies the validity of a signed message
+// params:
+// keyType - the key type we are working with. If left empty, defaults to ed25519,ripemd160 key/curve combination
+// signature - the signed message we are verifying
+// publicKey - the public key we are using to verify the signature
+// msg - the original message
+func (keys *KeyClient) Verify(keyType, signature, publicKey, msg string) (bool, error) {
+	err := keys.ensureRunning()
+	if err != nil {
+		return false, err
+	}
+
+	buf := new(bytes.Buffer)
+	if keyType == "" {
+		buf, err = services.ExecHandler("keys", []string{"eris-keys", "verify", msg, signature, publicKey})
+		if err != nil {
+			return false, err
+		}
+	} else {
+		buf, err = services.ExecHandler("keys", []string{"eris-keys", "verify", "--type", keyType, msg, signature, publicKey})
+		if err != nil {
+			return false, err
+		}
+	}
+
+	return strconv.ParseBool(strings.TrimSpace(buf.String()))
 }
