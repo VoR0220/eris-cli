@@ -1,11 +1,13 @@
 package maker
 
 import (
+	"fmt"
+	"path/filepath"
 	"strings"
 
+	"github.com/eris-ltd/eris-cli/config"
 	"github.com/eris-ltd/eris-cli/definitions"
 	"github.com/eris-ltd/eris-cli/log"
-	"github.com/eris-ltd/eris-cli/writers"
 )
 
 func MakeErisDBChain(name string, seeds []string, accounts []*definitions.ErisDBAccount, chainImageName string,
@@ -29,14 +31,14 @@ func MakeErisDBChain(name string, seeds []string, accounts []*definitions.ErisDB
 		}
 	}
 	for _, account := range accounts {
-		if err := writers.WritePrivVals(genesis.ChainID, account); err != nil {
+		if err := WritePrivVals(genesis.ChainID, account); err != nil {
 			return err
 		}
-		if err := writers.WriteGenesisFile(genesis.ChainID, genesis, account); err != nil {
+		if err := WriteGenesisFile(genesis.ChainID, genesis, account); err != nil {
 			return err
 		}
 		theSeeds := strings.Join(seeds, ",") // format for config file (if len>1)
-		if err := writers.WriteConfigurationFile(genesis.ChainID, account.Name, theSeeds,
+		if err := WriteConfigurationFile(genesis.ChainID, account.Name, theSeeds,
 			chainImageName, useDataContainer, exportedPorts, containerEntrypoint); err != nil {
 			return err
 		}
@@ -64,4 +66,33 @@ func MakeErisDBValidator(account *definitions.ErisDBAccount) *definitions.ErisDB
 	mintVal.PubKey = append(mintVal.PubKey, 1)
 	mintVal.PubKey = append(mintVal.PubKey, account.PubKey)
 	return mintVal
+}
+
+func WriteGenesisFile(name string, genesis *definitions.ErisDBGenesis, account *definitions.ErisDBAccount) error {
+	return writer(genesis, name, account.Name, "genesis.json")
+}
+
+func WriteConfigurationFile(chain_name, account_name, seeds string, chainImageName string,
+	useDataContainer bool, exportedPorts []string, containerEntrypoint string) error {
+	if account_name == "" {
+		account_name = "anonymous_marmot"
+	}
+	if chain_name == "" {
+		return fmt.Errorf("No chain name provided.")
+	}
+	var fileBytes []byte
+	var err error
+	if fileBytes, err = config.GetConfigurationFileBytes(chain_name,
+		account_name, seeds, chainImageName, useDataContainer,
+		convertExportPortsSliceToString(exportedPorts), containerEntrypoint); err != nil {
+		return err
+	}
+
+	file := filepath.Join(config.ChainsPath, chain_name, account_name, "config.toml")
+
+	log.WithField("path", file).Debug("Saving File.")
+	if err := config.WriteFile(string(fileBytes), file); err != nil {
+		return err
+	}
+	return nil
 }
