@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"path"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 
@@ -16,27 +15,20 @@ import (
 	"github.com/eris-ltd/eris-cli/log"
 	"github.com/eris-ltd/eris-cli/services"
 
-	eKeys "github.com/eris-ltd/eris-keys/eris-keys"
+	"github.com/eris-ltd/eris-db/keys"
 )
 
-type KeyClient struct {
-	IpAddr string
-}
+type KeyClient struct{}
 
 // Returns an initialized key client to a docker container
 // running the keys server
+// Adding the Ip address is optional and should only be used
+// for passing data
 func InitKeyClient() (*KeyClient, error) {
 	keys := &KeyClient{}
 	err := keys.ensureRunning()
 	if err != nil {
 		return nil, err
-	}
-	if runtime.GOOS == "darwin" {
-		eKeys.DaemonAddr = "http://127.0.0.1:4767"
-		keys.IpAddr = "http://127.0.0.1:4767"
-	} else {
-		eKeys.DaemonAddr = "http://172.17.0.2:4767"
-		keys.IpAddr = "http://172.17.0.2:4767"
 	}
 	return keys, nil
 }
