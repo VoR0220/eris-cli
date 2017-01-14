@@ -72,7 +72,8 @@ func DockerConnect(verbose bool, machName string) { // TODO: return an error...?
 		}).Debug()
 
 		if err := connectDockerTLS(dockerHost, dockerCertPath); err != nil {
-			IfExit(fmt.Errorf("Error connecting to Docker Backend via TLS.\nERROR =>\t\t\t%v\n", err))
+			IfExit(fmt.Errorf(`Error connecting to Docker Backend via TLS: %v
+				`, err))
 		}
 		log.Debug("Successfully connected to Docker daemon")
 

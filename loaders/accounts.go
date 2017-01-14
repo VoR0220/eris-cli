@@ -40,7 +40,9 @@ func LoadAccountType(fileName string) (*definitions.ErisDBAccountType, error) {
 
 	// marshall file
 	if err := accountType.Unmarshal(typ); err != nil {
-		return nil, fmt.Errorf("\nSorry, the marmots could not figure that account types file out.\nPlease check your account type definition file is properly formatted.\nERROR =>\t\t\t%v", err)
+		return nil, fmt.Errorf(`Sorry, the marmots could not figure that account types file out.
+			Please check your account type definition file is properly formatted: 
+			%v`, err)
 	}
 
 	return typ, nil
@@ -61,7 +63,7 @@ func getSetup(fileName string, cfg *viper.Viper) error {
 	// setup file
 	abs, err := filepath.Abs(fileName)
 	if err != nil {
-		return fmt.Errorf("\nSorry, the marmots were unable to find the absolute path to the account types file.")
+		return fmt.Errorf(`Sorry, the marmots were unable to find the absolute path to the account types file.`)
 	}
 
 	path := filepath.Dir(abs)
@@ -75,7 +77,7 @@ func getSetup(fileName string, cfg *viper.Viper) error {
 
 	// load file
 	if err := cfg.ReadInConfig(); err != nil {
-		return fmt.Errorf("\nSorry, the marmots were unable to load the file: (%s). Please check your path.\nERROR =>\t\t\t%v", fileName, err)
+		return fmt.Errorf(`Sorry, the marmots were unable to load the file: (%s). Please check your path: %v`, fileName, err)
 	}
 
 	return nil
