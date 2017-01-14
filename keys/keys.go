@@ -3,7 +3,6 @@ package keys
 import (
 	"bytes"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"path"
 	"path/filepath"
@@ -107,37 +106,31 @@ func (keys *KeyClient) ListKeys(host, container, quiet bool) ([]string, error) {
 // params:
 // save - whether or not to export it from container to host when we're done generating
 // password - not implemented yet
-func (keys *KeyClient) GenerateKey(save bool, password string) error {
+func (keys *KeyClient) GenerateKey(save bool, password string) (string, error) {
 	err := keys.ensureRunning()
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	buf := new(bytes.Buffer)
 	if password != "" {
-		return fmt.Errorf("Password currently unimplemented. Marmots are confused at how you got here.")
-	} else {
-		buf, err = services.ExecHandler("keys", []string{"eris-keys", "gen", "--no-pass"})
-		if err != nil {
-			return err
-		}
+		return "", fmt.Errorf("Password currently unimplemented. Marmots are confused at how you got here.")
+	}
+	buf, err = services.ExecHandler("keys", []string{"eris-keys", "gen", "--no-pass"})
+	if err != nil {
+		return "", err
 	}
 
+	address := strings.TrimSpace(buf.String())
 	if save {
-		addr := new(bytes.Buffer)
-		addr.ReadFrom(buf)
-
-		exportAddress := strings.TrimSpace(addr.String())
-
-		log.WithField("=>", exportAddress).Warn("Saving key to host")
-		if err := keys.ExportKey(exportAddress, false); err != nil {
-			return err
+		log.WithField("=>", address).Warn("Saving key to host")
+		if err := keys.ExportKey(address, false); err != nil {
+			return "", err
 		}
+	} else {
+		log.Warn(address)
 	}
-
-	io.Copy(config.Global.Writer, buf)
-
-	return nil
+	return address, nil
 }
 
 // Keyclient exports keys from container to host.
@@ -150,13 +143,16 @@ func (keys *KeyClient) ExportKey(address string, all bool) error {
 		return err
 	}
 	do := definitions.NowDo()
+	do.Name = "keys"
 	if all && address == "" {
 		do.Destination = config.KeysPath
 		do.Source = path.Join(config.KeysContainerPath)
+		do.All = all
 	} else if all && address != "" {
 		return fmt.Errorf("Dev implementation error: Cannot import both all and a single address: %v", address)
 	} else {
 		do.Destination = config.KeysDataPath
+		do.Address = address
 		do.Source = path.Join(config.KeysContainerPath, do.Address)
 	}
 	return data.ExportData(do)
@@ -173,6 +169,7 @@ func (keys *KeyClient) ImportKey(address string, all bool) error {
 	}
 
 	do := definitions.NowDo()
+	do.Name = "keys"
 	if all && address == "" {
 		// get all keys from host
 		result, err := keys.ListKeys(true, false, true)
@@ -183,6 +180,7 @@ func (keys *KeyClient) ImportKey(address string, all bool) error {
 		do.Container = true
 		do.Host = false
 		do.Quiet = false
+		do.All = all
 		for _, addr := range result {
 			do.Source = filepath.Join(config.KeysDataPath, addr)
 			do.Destination = path.Join(config.KeysContainerPath, addr)
@@ -195,6 +193,7 @@ func (keys *KeyClient) ImportKey(address string, all bool) error {
 	} else {
 		do.Source = filepath.Join(config.KeysDataPath, address)
 		do.Destination = path.Join(config.KeysContainerPath, address)
+		do.Address = address
 		if err := data.ImportData(do); err != nil {
 			return err
 		}

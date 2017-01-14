@@ -1,7 +1,6 @@
 package keys
 
 import (
-	"bytes"
 	"io/ioutil"
 	"os"
 	"path"
@@ -19,7 +18,8 @@ import (
 
 func TestMain(m *testing.M) {
 	// log.SetLevel(log.ErrorLevel)
-	log.SetLevel(log.InfoLevel)
+	log.SetLevel(log.WarnLevel)
+	// log.SetLevel(log.InfoLevel)
 	// log.SetLevel(log.DebugLevel)
 
 	testutil.IfExit(testutil.Init(testutil.Pull{
@@ -71,8 +71,8 @@ func TestGenerateKey(t *testing.T) {
 	if address == "" {
 		t.Fatalf("Expected generated key, but got empty output")
 	}
-	//See if saved on the host
-	output := testListKeys(keyClient, "host")
+	//See if saved on the container
+	output := testListKeys(keyClient, "container")
 
 	if len(output) != 1 {
 		t.Fatalf("Expected one key, got (%v)", len(output))
@@ -90,8 +90,9 @@ func TestGenerateKey(t *testing.T) {
 	if address == "" {
 		t.Fatalf("Expected generated key, but got empty output")
 	}
+
 	//See if saved on the host
-	output = testListKeys(keyClient, "container")
+	output = testListKeys(keyClient, "host")
 
 	if len(output) != 1 {
 		t.Fatalf("Expected one key, got (%v)", len(output))
@@ -100,6 +101,7 @@ func TestGenerateKey(t *testing.T) {
 	if address != output[0] {
 		t.Fatalf("Expected (%s), got (%s)", address, output[0])
 	}
+
 	// Todo: implement password and change this
 	_, err = testsGenAKey(keyClient, true, "marmot")
 	if err == nil {
@@ -158,7 +160,7 @@ func TestImportKeySingle(t *testing.T) {
 		t.Fatalf("Unexpected error in key generation: %v", err)
 	}
 
-	key, err := ioutil.ReadFile(filepath.Join(filepath.Join(config.KeysPath, "data"), address, address))
+	key, err := ioutil.ReadFile(filepath.Join(config.KeysPath, "data", address, address))
 	if err != nil {
 		t.Fatalf("error reading file: %v", err)
 	}
@@ -362,15 +364,7 @@ func testListKeys(keys *KeyClient, typ string) []string {
 }
 
 func testsGenAKey(keys *KeyClient, save bool, password string) (string, error) {
-	addr := new(bytes.Buffer)
-	config.Global.Writer = addr
-
-	if err := keys.GenerateKey(save, password); err != nil {
-		return "", err
-	}
-
-	addrBytes := addr.Bytes()
-	return strings.TrimSpace(string(addrBytes)), nil
+	return keys.GenerateKey(save, password)
 }
 
 func testExistAndRun(t *testing.T, servName string, toExist, toRun bool) {
