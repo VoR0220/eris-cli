@@ -67,7 +67,8 @@ func LoadChainTypes(fileName string) (*definitions.ChainType, error) {
 
 	// marshall file
 	if err := chainType.Unmarshal(typ); err != nil {
-		return nil, fmt.Errorf("\nSorry, the marmots could not figure that chain types file out.\nPlease check your chain type definition file is properly formatted.\nERROR =>\t\t\t%v", err)
+		return nil, fmt.Errorf(`Sorry, the marmots could not figure that chain types file out.
+			Please check your chain type definition file is properly formatted: %v`, err)
 	}
 
 	return typ, nil
