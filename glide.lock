@@ -82,7 +82,7 @@ imports:
   - rpc/tendermint/core/types
   - txs
 - name: github.com/eris-ltd/eris-logger
-  version: ea48a395d6ecc0eccc67a26da9fc7a6106fabb84
+  version: aa1d50814ef98f3e3b048e7ef67ffcb2076582b0
 - name: github.com/ethereum/go-ethereum
   version: f087c66f9599b0f4650ae643d3342b10a6b56c5b
   subpackages:
