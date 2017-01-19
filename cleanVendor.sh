@@ -16,7 +16,7 @@
 # ./cleanVendor.sh in the root directory
 
 go get -u github.com/sgotti/glide-vc
-go get -u github.com/ethereum/go-ethereum
+go get github.com/ethereum/go-ethereum/crypto/secp256k1
 glide vc
-rm -rf vendor/github.com/ethereum/go-ethereum/crypto/secp256k1
-mv $GOPATH/src/github.com/ethereum/go-ethereum/crypto/secp256k1 $GOPATH/src/github.com/eris-ltd/eris-cli/vendor/github.com/ethereum/go-ethereum/crypto/
+rm -rf ./vendor/github.com/ethereum/go-ethereum/crypto/secp256k1
+cp -r $GOPATH/src/github.com/ethereum/go-ethereum/crypto/secp256k1 $GOPATH/src/github.com/eris-ltd/eris-cli/vendor/github.com/ethereum/go-ethereum/crypto/
