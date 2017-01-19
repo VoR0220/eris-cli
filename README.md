@@ -181,6 +181,10 @@ glide up
 glide install
 # Run our helpful vendor cleaning script in the root of Eris-CLI
 ./cleanVendor.sh
+# commit the vendor and push
+git add vendor/*
+git commit -sm "some helpful message here about the dependency added"
+git push yourRepo yourBranch
 ```
 
 See our [CONTRIBUTING.md](.github/CONTRIBUTING.md) and [PULL_REQUEST_TEMPLATE.md](.github/PULL_REQUEST_TEMPLATE.md) for more details.
