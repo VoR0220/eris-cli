@@ -17,7 +17,7 @@ import (
 	compilers "github.com/eris-ltd/eris-compilers/perform"
 
 	"github.com/eris-ltd/eris-db/client"
-	"github.com/eris-ltd/eris-db/client/core"
+	"github.com/eris-ltd/eris-db/client/rpc"
 	"github.com/eris-ltd/eris-db/keys"
 	"github.com/eris-ltd/eris-db/txs"
 )
@@ -247,7 +247,7 @@ func deployRaw(do *definitions.Do, deploy *definitions.Deploy, contractName, con
 
 	erisNodeClient := client.NewErisNodeClient(do.ChainURL)
 	erisKeyClient := keys.NewErisKeyClient(do.Signer)
-	tx, err := core.Call(erisNodeClient, erisKeyClient, do.PublicKey, deploy.Source, "", deploy.Amount, deploy.Nonce, deploy.Gas, deploy.Fee, contractCode)
+	tx, err := rpc.Call(erisNodeClient, erisKeyClient, do.PublicKey, deploy.Source, "", deploy.Amount, deploy.Nonce, deploy.Gas, deploy.Fee, contractCode)
 	if err != nil {
 		return &txs.CallTx{}, fmt.Errorf("Error deploying contract %s: %v", contractName, err)
 	}
@@ -313,7 +313,7 @@ func CallJob(call *definitions.Call, do *definitions.Do) (string, []*definitions
 
 	erisNodeClient := client.NewErisNodeClient(do.ChainURL)
 	erisKeyClient := keys.NewErisKeyClient(do.Signer)
-	tx, err := core.Call(erisNodeClient, erisKeyClient, do.PublicKey, call.Source, call.Destination, call.Amount, call.Nonce, call.Gas, call.Fee, callData)
+	tx, err := rpc.Call(erisNodeClient, erisKeyClient, do.PublicKey, call.Source, call.Destination, call.Amount, call.Nonce, call.Gas, call.Fee, callData)
 	if err != nil {
 		return "", make([]*definitions.Variable, 0), err
 	}
@@ -325,7 +325,7 @@ func CallJob(call *definitions.Call, do *definitions.Do) (string, []*definitions
 
 	// Sign, broadcast, display
 
-	res, err := core.SignAndBroadcast(do.ChainID, erisNodeClient, erisKeyClient, tx, true, true, true)
+	res, err := rpc.SignAndBroadcast(do.ChainID, erisNodeClient, erisKeyClient, tx, true, true, true)
 	if err != nil {
 		var str, err = util.MintChainErrorHandler(do, err)
 		return str, make([]*definitions.Variable, 0), err
@@ -370,7 +370,7 @@ func deployFinalize(do *definitions.Do, tx interface{}) (string, error) {
 
 	erisNodeClient := client.NewErisNodeClient(do.ChainURL)
 	erisKeyClient := keys.NewErisKeyClient(do.Signer)
-	res, err := core.SignAndBroadcast(do.ChainID, erisNodeClient, erisKeyClient, tx.(txs.Tx), true, true, true)
+	res, err := rpc.SignAndBroadcast(do.ChainID, erisNodeClient, erisKeyClient, tx.(txs.Tx), true, true, true)
 	if err != nil {
 		return util.MintChainErrorHandler(do, err)
 	}

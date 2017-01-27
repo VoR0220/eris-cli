@@ -1,4 +1,4 @@
-package: github.com/eris-ltd/eris-cli
+package: github.com/eris-ltd/eris
 import:
 - package: github.com/BurntSushi/toml
   version: ~0.2.0
@@ -10,18 +10,15 @@ import:
   - pkg/archive
   - pkg/jsonmessage
   - pkg/term
-- package: github.com/eris-ltd/common
-  subpackages:
-  - go/docs
 - package: github.com/eris-ltd/eris-compilers
   version: develop
   subpackages:
   - perform
 - package: github.com/eris-ltd/eris-db
-  version: unstable-develop
+  version: develop
   subpackages:
   - client
-  - client/core
+  - client/rpc
   - genesis
   - keys
   - txs
