@@ -25,13 +25,15 @@ In this tutorial we will cover some of the basic ones, types, interfaces, events
 
 # Types - the basics
 
-*Type-related information can be found in the official Solidity tutorial, under [types](https://github.com/ethereum/wiki/wiki/Solidity-Tutorial#types). It is good to have read that first.*
+*Type-related information can be found in the official Solidity tutorial, under [types](http://solidity.readthedocs.io/en/latest/types.html#types). It is good to have read that first.*
 
 Solidity is a `statically typed language`, like for example C/C++ and Java. This may be new to people that have been working mostly with scripting/interpreted languages. What `statically typed` means is that when you declare a variable you must also include its type. For example: `myVar = 55;`is not allowed, but `int myInt = 55;` is. Types can be inferred by using `var` i.e. `var myVar = 55;` is allowed and will automatically get the type `uint8`. You must initialize a `var` when declaring it.
 
 Types are checked at compile-time, so if you make a mistake you will get a compiler error. For example, this is not possible:
 
 ```javascript
+pragma solidity ^0.4.0;
+
 contract Test {
   bool bVar;
 
@@ -45,7 +47,7 @@ The error it would throw is this: `Error: Type address not implicitly convertibl
 
 ## Type conversion
 
-The compiler allows you to convert between types in certain cases. Let's say you have the number `1` stored in a `uint` variable, and you want to use it in another variable of type `int`. That is possible - but you generally have to do the conversion yourself. This is how you would do it:
+The compiler allows you to convert between types in certain cases. There are two kinds of conversions, implicit and explicit. An implicit conversion means that you don't need to do anything fancy, they just convert. For example, the type of `1` can convert to a `uint` or an `int` but it cannot convert to say, a `string`. A type `int8` is also implicitly convertible to a type `int256`, however, the same cannot be said for the reverse. Which brings us to the second kind of conversion, an explicit conversion. This kind of conversion allows you to throw your hands to the sky and say "do your worst Solidity!" so be cautious when you use it as it may create some unexpected behavior such as data loss in the case of say converting a `int256` to a `int8`. Let's take a look at an example of an explicit conversion. Let's say you have the number `1` stored in a `uint` variable, and you want to use it in another variable of type `int`. That is possible - but you must explicitly convert it first. This is how you would do it:
 
 ```javascript
 
@@ -64,11 +66,9 @@ Solidity uses the `contract` data-type to model smart contracts. It is very simi
 
 A `contract` has a number of fields and methods; for example, the `contract` type can have a constructor, it can inherit from other contracts, etc.
 
-The official tutorial has a number of simple [example contracts](https://github.com/ethereum/wiki/wiki/Solidity-Tutorial#simple-example) in it. Recently the Solidity designers have added `interface contracts`. These contracts allow functions to be abstract (have no body). Technically it has been possible to use "interface-ish" contracts before, but it has not been possible to make them truly abstract until now.
+The official tutorial has a number of simple [example contracts](http://solidity.readthedocs.io/en/latest/solidity-by-example.html) in it. 
 
-As I write this (2015-04-14) they haven't implemented all the features (as per the [story](https://www.pivotaltracker.com/story/show/88344782)), but it's practically good to go.
-
-Here is an example. It is a simple interface with only one function in it.
+Here is an example of an interface contract. It is a simple interface with only one function in it.
 
 ```javascript
 contract Depositor {
@@ -84,11 +84,11 @@ contract HeyImADepositor is Depositor {
 }
 ```
 
-No, you're not. Why? You're not implementing the deposit function. If I try and compile this, it will fail. As I write this I don't yet get a compiler error, but the contract will not work (no bytecode). In order for the contract to work it has to create a function with the same signature as the deposit function but with a proper body.
+No, you're not. Why? You're not implementing the deposit function. If I try and compile this, it will fail. In order for the contract to work it has to create a function with the same signature as the deposit function but with a proper body.
 
 ```javascript
 contract OkButNowIAm is Depositor {
-  function deposit(uint amount) {}
+  function deposit(uint amount);
 }
 ```
 
@@ -104,13 +104,15 @@ Here is the implementation
 
 ```javascript
 contract DepImpl is Depositoror {
-  function deposit(uint amount) {}
+  function deposit(uint amount);
 }
 ```
 
 The `DepImpl` contract will compile, and it will work exactly like `OkButNowIAm`. Next we're going to create an interface that extends two other interfaces.
 
 ```javascript
+pragma solidity ^0.4.0;
+
 contract Depositor {
   function deposit(uint amount) returns (bool);
 }
@@ -122,9 +124,10 @@ contract Withdrawer {
 contract BankUser is Depositor, Withdrawer {}
 ```
 
-Now we implement `BankUser`, create a `Bank` interface, implement that and then and combine them.
+Now we implement `BankUser`, create a `Bank` interface, implement that and then combine them.
 
 ```javascript
+pragma solidity ^0.4.0;
 // Interface for banks.
 contract Bank {
   // The return values would be to indicate that the transaction was successful.
@@ -166,6 +169,8 @@ contract ABankUser is BankUser {
 The `ABankUser` contract keeps a reference to a `Bank` contract to do the actual depositing. `Bank` is an interface, which means that any contract that implements that interface will do. In fact, we could make this contract even more generic by allowing the bank to be set. This is valid:
 
 ```javascript
+pragma solidity ^0.4.0;
+
 contract ARiskyBankUser is BankUser {
 
   Bank bank;
@@ -184,7 +189,7 @@ contract ARiskyBankUser is BankUser {
 }
 ```
 
-It has `risky` in it because it is not safe. First of all, `bank` starts out un-initialized, which means the `deposit` and `withdraw` functions might fail. Secondly, `setBank` has an address in the method signature and there is no guarantee that this contract is a bank. Finally, of course this is generally a bad contract because it has no permissions structure. It's just a demonstration of interfaces so it shouldn't have that, but it's still worth keeping in mind.
+It has `risky` in it because it is not safe. First of all, `bank` starts out un-initialized, which means the `deposit` and `withdraw` functions might fail. Secondly, `setBank` has an address in the method signature and there is no guarantee that this contract is a bank. There are plans on the solidity team to rectify this with the use of `contract metadata` but until that is merged in, do take caution. Finally, of course this is generally a bad contract because it has no permissions structure. It's just a demonstration of interfaces so it shouldn't have that, but it's still worth keeping in mind.
 
 # Events
 
@@ -193,6 +198,8 @@ Events are used to dump information from Solidity contract code into the blockch
 Let us look at an example. We start by adding a new function to the BankUser interface:
 
 ```javascript
+pragma solidity ^0.4.0;
+
 contract BankUser is Depositor, Withdrawer {
   function complain(bytes32 complaint);
 }
@@ -201,10 +208,14 @@ contract BankUser is Depositor, Withdrawer {
 Now we implement:
 
 ```javascript
+pragma solidity ^0.4.0;
+
 contract ABankUser is BankUser {
 
   Bank bank;
 
+  // Here we use the argument `indexed` modifier purely for the capability to filter through our event logs later. If you only plan 
+  // to sync with the chain and check that a certain event fired, this is unnecessary.
   event Complain(address indexed userAddress, bytes32 indexed complaint);
 
   function ABankUser(){
@@ -225,7 +236,7 @@ contract ABankUser is BankUser {
     }
   }
 
-  function complain(bytes32 complaint){
+  function complain(string complaint){
     Complain(msg.sender, complaint);
   }
 }
@@ -253,6 +264,8 @@ The `args` object will have fields that are named after the indexed fields in th
 Regarding types: Contracts and "interfaces" are the same. There's no special interface type. The only difference is that an interface contract is allowed by the compiler to have abstract functions in it. Also, as we have seen, it is possible to coerce a contract into a super-contract i.e. there is no need to make an explicit cast:
 
 ```javascript
+pragma solidity ^0.4.0;
+
 contract A {}
 
 contract B is A {}
@@ -276,13 +289,15 @@ function setB(address addr){
 }
 ```
 
-There is no way of checking what type of contract is actually at that address though - or if it's even a contract. What this means is: **A contract can pass the compiler type checks but still be of the wrong type. Also, this is very hard to detect.**
+There is no way of checking what type of contract is actually at that address though - or if it's even a contract. What this means is: **A contract can pass the compiler type checks but still be of the wrong type. Also, this is very hard to detect (for now).**
 
 Consider this:
 
 ```javascript
+pragma solidity ^0.4.0;
+
 contract Greeter {
-  function greet() returns (bytes32) {
+  function greet() returns (string) {
     return "Hello!";
   }
 }
@@ -295,14 +310,14 @@ contract Test {
     greeter = Greeter(addr);
   }
 
-  function callGreeter() returns (bytes32) {
+  function callGreeter() returns (string) {
     return greeter.greet();
   }
 }
 
 contract Tester {
   Test t;
-  bytes32 msg;
+  string msg;
 
   function Tester(){
     t = new Test();
@@ -319,4 +334,4 @@ One way of circumventing this is to only allow contracts to be added in very con
 
 # Errors
 
-There is no real error handling system in Solidity (yet). There are no `try - catch` or `throw` statements, or something to that effect. Contract designers need to deal with errors themselves. Solidity does some sanity checks on arrays and such, but will often respond simply by executing the `(STOP)` instruction. According to the developers, this is just put in as a placeholder until a more sophisticated error handling and recovery system is put in place.
+There is no real error handling system in Solidity, atleast in the way one traditionally thinks of error handling. Currently the tried and true way to handle errors in Solidity is to write `throw`. This command automatically reverses any state changes a transaction may have made to the contract, consumes all gas in the transaction and returns any tokens deposited back to the sender. Unfortunately, one will not be able to know what exactly caused the error or be able to append an error message. This is due to complications in the EVM that lead to questions about how to handle such an error message. The developers of Solidity are aware of this and are working on a solution to this.

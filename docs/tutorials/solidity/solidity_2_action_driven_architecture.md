@@ -49,7 +49,7 @@ PRODOUG was made secure by encapsulating all the code that users could run in so
 
 ```javascript
 contract SomeAction {
-  function execute(type1 par1, type2 par2, ....) constant returns (bool result) {}
+  function execute(type1 par1, type2 par2, ....) constant returns (bool result);
 }
 ```
 
@@ -229,12 +229,12 @@ To lock these contracts down, we only allow the contract currently registered as
 
 ```javascript
 contract ContractProvider {
-  function contracts(bytes32 name) returns (address){}
+  function contracts(bytes32 name) returns (address);
 }
 
 contract ActionManagerEnabled is DougEnabled {
   // Makes it easier to check that action manager is the caller.
-  function isActionManager() internal constant returns (bool) {
+  function isActionManager() external constant returns (bool) {
     if(DOUG != 0x0){
       address am = ContractProvider(DOUG).contracts("actions");
       if (msg.sender == am){
@@ -257,7 +257,7 @@ Here's the endow action contract.
 ```javascript
 // The Bank contract (the "sub interface" we need).
 contract Endower {
-  function endow(address addr, uint amount) {}
+  function endow(address addr, uint amount);
 }
 
 // The endow action.
@@ -409,7 +409,7 @@ Here is the new bank:
 ```javascript
 // Interaction with the action manager.
 contract Validator {
-  function validate(address addr) constant returns (bool) {}
+  function validate(address addr) constant returns (bool);
 }
 
 // The Bank contract - now inherits DougEnabled

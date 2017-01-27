@@ -25,34 +25,38 @@ This post and the following ones will be about validating smart contracts; makin
 
 # Testing smart-contracts
 
-The topics of this and the coming posts will mostly be smart contract testing, building and CI. In this one we're going to do some tests using a simple Coin/Bank contract as an example. This particular contract can also be found in the official [Solidity tutorial](https://github.com/ethereum/wiki/wiki/Solidity-Tutorial#subcurrency-example).
+The topics of this and the coming posts will mostly be smart contract testing, building and CI. In this one we're going to do some tests using a simple Coin/Bank contract as an example. This particular contract can also be found in the official [Solidity tutorial](https://solidity.readthedocs.io/en/latest/introduction-to-smart-contracts.html#subcurrency-example).
 
 
 ```javascript
+pragma solidity ^0.4.0;
+
 contract Coin {
-    address minter;
-    mapping (address => uint) balances;
+    // The keyword "public" makes those variables
+    // readable from outside.
+    address public minter;
+    mapping (address => uint) public balances;
 
-    event Send(address from, address to, uint value);
+    // Events allow light clients to react on
+    // changes efficiently.
+    event Sent(address from, address to, uint amount);
 
+    // This is the constructor whose code is
+    // run only when the contract is created.
     function Coin() {
         minter = msg.sender;
     }
 
-    function mint(address owner, uint amount) {
+    function mint(address receiver, uint amount) {
         if (msg.sender != minter) return;
-        balances[owner] += amount;
+        balances[receiver] += amount;
     }
 
     function send(address receiver, uint amount) {
         if (balances[msg.sender] < amount) return;
         balances[msg.sender] -= amount;
         balances[receiver] += amount;
-        Send(msg.sender, receiver, amount);
-    }
-
-    function queryBalance(address addr) constant returns (uint balance) {
-        return balances[addr];
+        Sent(msg.sender, receiver, amount);
     }
 }
 ```
@@ -134,25 +138,35 @@ We will start by doing three small modifications to the `Coin` contract.
 This is the version of the `Coin` contract that we'll be working with:
 
 ```javascript
+pragma solidity ^0.4.0;
+
 contract Coin {
+    // The keyword "public" makes those variables
+    // readable from outside.
     address public minter;
     mapping (address => uint) public balances;
 
+    // Events allow light clients to react on
+    // changes efficiently.
+    event Sent(address from, address to, uint amount);
+
+    // This is the constructor whose code is
+    // run only when the contract is created.
     function Coin() {
         minter = msg.sender;
     }
 
-    function mint(address owner, uint amount) {
+    function mint(address receiver, uint amount) {
         if (msg.sender != minter) return;
-        balances[owner] += amount;
+        balances[receiver] += amount;
     }
 
     function send(address receiver, uint amount) {
         if (balances[msg.sender] < amount) return;
         balances[msg.sender] -= amount;
         balances[receiver] += amount;
+        Sent(msg.sender, receiver, amount);
     }
-
 }
 ```
 
@@ -171,6 +185,7 @@ Here is the list of tests again:
 This is the testing contract. We're not gonna mock anything, so some of the tests are a bit awkward, but that doesn't matter.
 
 ```javascript
+pragma solidity ^0.4.0;
 // Used to interact with the coin contract.
 contract CoinAgent {
 
@@ -203,7 +218,7 @@ contract CoinTest {
     CoinAgent senderAgent = new CoinAgent(coin);
     CoinAgent receiverAgent = new CoinAgent(coin);
     CoinAgent sendFailerAgent = new CoinAgent(coin);
-  CoinAgent receiveFailerAgent = new CoinAgent(coin);
+    CoinAgent receiveFailerAgent = new CoinAgent(coin);
 
     // Gonna use this as a default value for coins.
     uint constant COINS = 5;
@@ -283,7 +298,7 @@ contract CoinTest is Asserter {
     CoinAgent senderAgent = new CoinAgent(coin);
     CoinAgent receiverAgent = new CoinAgent(coin);
     CoinAgent sendFailerAgent = new CoinAgent(coin);
-  CoinAgent receiveFailerAgent = new CoinAgent(coin);
+    CoinAgent receiveFailerAgent = new CoinAgent(coin);
 
     // Gonna use this as a default value for coins.
     uint constant COINS = 5;

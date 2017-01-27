@@ -47,9 +47,9 @@ contract Data {
 
     uint public data;
 
-    function addData(uint data_) {
+    function addData(uint _data) {
         if(msg.sender == 0x692a70d2e424a56d2c6c27aa97d1a86395877b3a)
-            data = data_;
+            data = _data;
     }
 
 }
@@ -71,9 +71,9 @@ contract DataOwnerSettable {
             data = data_;
     }
 
-    function setOwner(address owner_) {
+    function setOwner(address _owner) {
         if(msg.sender == owner)
-            owner = owner_;
+            owner = _owner;
     }
 
 }

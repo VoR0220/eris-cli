@@ -25,84 +25,53 @@ This post is about how we can divide contracts up into components. By creating s
 
 ## owned and mortal
 
-We're going to start with basic permissions. This is something I've written about before, and I used the same contracts. In the [Solidity standard library](https://github.com/ethereum/wiki/wiki/Solidity-standard-library#contracts), you will find these two contracts called `owned` and `mortal`.  The point of the `owned` is to provide a simple basis for access control, because a contract that extends `owned` will get the `address owner` field, which is automatically set to `msg.sender` in the constructor (so the address of the account that creates the contract). It also provides a modifier which can be added to a function in order to check if the caller of the function is the owner.
+We're going to start with basic permissions. This is something I've written about before, and I used the same contracts. As you become more read in Solidity and in the Ethereum/Monax/Tendermint/"Whoever else uses the EVM" community, you will find two standard contracts called `owned` and `mortal`.  The point of the `owned` is to provide a simple basis for access control, because a contract that extends `owned` will get the `address owner` field, which is automatically set to `msg.sender` in the constructor (so the address of the account that creates the contract). It also provides a modifier which can be added to a function in order to check if the caller of the function is the owner.
 
 To start with, we're going to make a few changes to the contracts.
 
 owned:
 
 ```javascript
-contract owned{
+pragma solidity ^0.4.0;
 
-    function owned() {
-        owner = msg.sender;
-    }
-
-    function isOwner() constant returns (bool) {
-        return msg.sender == owner;
-    }
-
+contract owned {
+    function owned() { owner = msg.sender; }
     address owner;
+
+    // This contract only defines a modifier but does not use
+    // it - it will be used in derived contracts.
+    // The function body is inserted where the special symbol
+    // "_;" in the definition of a modifier appears.
+    // This means that if the owner calls this function, the
+    // function is executed and otherwise, an exception is
+    // thrown.
+    modifier onlyOwner {
+        if (msg.sender != owner)
+            throw;
+        _;
+    }
 }
 ```
 
 mortal:
 
 ```javascript
+pragma solidity ^0.4.0;
 import "owned";
 
 contract mortal is owned {
 
-    function kill() {
-        if (isOwner()){
-            selfdestruct(owner);
-        }
+    function kill() onlyOwner {
+        selfdestruct(owner);
     }
 }
 ```
 
-Through the rules of inheritance (which is very similar to how it works in C++), `mortal` now has all the fields and function of `owned`, and when it is instantiated it will automatically call the constructor of `owned` which will set the `owner` field. It can also call `isOwner` to do the owner check. Also, if `mortal` is extended by another contract, that contract will have a `kill()` function that selfdestructs the contract and can only be called by the contract creator (which is what the `mortal` contract is for).
-
-Finally, a very simple [unit-testing contract](solidity_4_testing_solidity) could be written for `owned` to ensure that it does indeed work:
-
-```javascript
-contract failer {
-
-    owned od;
-
-    function failer(address _od){
-        od = owned(_od);
-    }
-
-    function isOwner() constant returns (bool){
-        return od.isOwner();
-    }
-}
-
-// Simple contract creates 'owneds' and make sure it works. Returns success or failure through a boolean.
-contract ownedTest {
-
-    function testIsOwner() returns (bool) {
-        // Owner should be set to the address of this contract.
-        var od = new owned();
-        return od.isOwner();
-    }
-
-    function testIsOwnerFail() returns (bool) {
-        // Sets owner to address of this contract.
-        var od = new owned();
-        failer fr = new failer(od);
-        // Should fail, because 'fr' gets its own address, and that address is
-        // not the same as the address of this contract.
-        return !fr.isOwner();
-    }
-
-}
-```
+Through the rules of inheritance (which is very similar to how it works in C++), `mortal` now has all the fields and function of `owned`, and when it is instantiated it will automatically call the constructor of `owned` which will set the `owner` field. Any function with `onlyOwner` modifier appended will only execute when called from the owner address. Also, if `mortal` is extended by another contract, that contract will have a `kill()` function that selfdestructs the contract and can only be called by the contract creator (which is what the `mortal` contract is for).
 
 # Strategies
 
-The `owned` and `mortal` contracts are useful, but very limited in their scope. In most systems we would not be happy with this arrangement, but would rather want a more flexible system for deciding who gets to do what, or in other words: we would want a different permission strategy. Regardless of what that strategy is, though, it should still have a number of properties in common with `owned`. For example, if we change the no-argument `isOwner` function to `isAdmin`, and change the fields, we should be able to create similar contracts that use the same basis, but implement different strategies for managing (single account) access control. Here is one way of creating the same basic system, but allows for two different access-control strategies:
+The `owned` and `mortal` contracts are useful, but very limited in their scope. In most systems we would not be happy with this arrangement, but would rather want a more flexible system for deciding who gets to do what, or in other words: we would want a different permission strategy. Regardless of what that strategy is, though, it should still have a number of properties in common with `owned`. For example, if we change from the modifier `onlyOwner` to a modifier `isAdmin`, and change the fields, we should be able to create similar contracts that use the same basis, but implement different strategies for managing (single account) access control. Here is one way of creating the same basic system, but allows for two different access-control strategies:
 
 ```javascript
 // Basic authentication contract is abstract. Unlike 'owned' it also has an overloaded version that takes a param.

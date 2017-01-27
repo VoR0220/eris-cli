@@ -23,7 +23,7 @@ This tutorial is part of our Solidity tutorial series:
 
 This is an introduction to systems of smart contracts. The purpose of these documents is to teach methods of writing large, scalable smart contract back-ends for ecosystem applications. The reader should be familiar with the basics of smart contract writing, and they should know what accounts, contracts and transactions are, and how to work with them. A good introduction to smart contract development (and a must-read) from the official Solidity site (the language this tutorial is written in) can be found [here](http://solidity.readthedocs.io/en/latest/introduction-to-smart-contracts.html).
 
-On top of this, we would also recommend checking out the [Ethereum wiki](https://github.com/ethereum/wiki/wiki). It has links to the above mentioned docs, and a lot of other information as well, such as the [contract ABI](https://github.com/ethereum/wiki/wiki/Ethereum-Contract-ABI) and the [natspec (for documentation)](https://github.com/ethereum/wiki/wiki/Ethereum-Natural-Specification-Format). To discuss Eris-specific implementations, the Eris Industries team can be reached on [#erisindustries](irc://freenode.net/#erisindustries) on Freenode or [our own support forum](https://support.monax.io)
+On top of this, we would also recommend checking out the [Ethereum wiki](https://github.com/ethereum/wiki/wiki). It has links to the above mentioned docs, and a lot of other information as well, such as the [contract ABI](https://github.com/ethereum/wiki/wiki/Ethereum-Contract-ABI) and the [natspec (for documentation)](https://github.com/ethereum/wiki/wiki/Ethereum-Natural-Specification-Format). To discuss Monax-specific implementations, you can visit [the Marmot Den](monax.slack.com) on Slack or [our own support forum](https://support.monax.io)
 
 About trust: The systems we study here are designed to be modular, i.e. parts of the code can be replaced during runtime, which in turn makes them inherently trust-ful. Someone must be allowed to make these updates. It is important to know this. If you want to learn how to write small trust-less, automated systems this is not really the place (although many of the principles are the same in both types of systems).
 
@@ -38,6 +38,9 @@ Finally, before we get started it is important to know this: Writing smart contr
 This document is about systems of smart contracts, but we will start by looking at single contracts. This for example is a standard name registry contract. Name registry, or "namereg" contracts generally lets people associate a name with an user account address. This is an example of such a contract:
 
 ```javascript
+//this is a simple pragma to tell us what versions of solidity our contract will accept interacting with once deployed
+pragma solidity ^0.4.6; 
+
 contract Users {
     // Here we store the names. Make it public to automatically generate an
     // accessor function named 'users' that takes a fixed-length string as argument.
@@ -45,16 +48,16 @@ contract Users {
 
     // Register the provided name with the caller address.
     // Also, we don't want them to register "" as their name.
-    function register(bytes32 name) {
-        if(users[name] == 0 && name != ""){
-            users[name] = msg.sender;
+    function register(bytes32 _name) {
+        if(users[_name] == 0x0 && _name != ""){
+            users[_name] = msg.sender;
         }
     }
 
     // Unregister the provided name with the caller address.
-    function unregister(bytes32 name) {
-        if(users[name] != 0 && name != ""){
-            users[name] = 0x0;
+    function unregister(bytes32 _name) {
+        if(users[_name] != 0x0 && _name != ""){
+            users[_name] = 0x0;
         }
     }
 }
@@ -65,6 +68,8 @@ When this contract is called, it will use `msg.sender` and a provided `name` as 
 This is a very basic but useful contract. It lets you refer to users by name instead of having to use their public address. It could be used as a basis for almost anything. It could use some more functionality, such as being able to list all the registered users, and maybe also make it possible to get a name by address, and not just address by name, and other things. We're not going to study namereg contracts here though, we're going to study systems, so we'll start with another contract instead:
 
 ```javascript
+pragma solidity ^0.4.6;
+
 contract HelloSystem {
 }
 ```
@@ -74,6 +79,8 @@ contract HelloSystem {
 The `HelloSystem` contract can be deployed as-is without any problems, but once it's been deployed it will remain on the chain for good. We need a way to remove it. In Solidity, the command for removing (or suiciding) a contract is this: `selfdestruct(addr)`. The argument here is the address to which any remaining funds should be sent. In order to expose this functionality, we need to put it inside a (implicitly public) function. This is what a selfdestruct function could look like in `HelloSystem`:
 
 ```javascript
+pragma solidity ^0.4.6; 
+
 contract HelloSystem {
     function remove() {
         selfdestruct(msg.sender);
@@ -84,6 +91,8 @@ contract HelloSystem {
 What this would do is to remove the contract when the `remove` function is called, and it would return any funds it may have to the caller. Needless to say, this is not ideal. Normally when you add a selfdestruct function you want to restrict the access to it. The simplest way of doing it is to store the address of the contract creator when the contract is deployed, and only allow the creator to call selfdestruct on it. Here is how that could be implemented:
 
 ```javascript
+pragma solidity ^0.4.6; 
+
 contract HelloSystem {
 
     address owner;
@@ -107,6 +116,8 @@ contract HelloSystem {
 There are several different ways to control how contracts are added and removed. Users can create them by making a create-transaction to the client. Another way is to have contracts create them. Contracts are allowed to create other contracts. Here is one example of a contract that creates a `HelloSystem` contract.
 
 ```javascript
+pragma solidity ^0.4.6; 
+
 contract HelloSystem {
 
     address owner;
@@ -125,11 +136,11 @@ contract HelloSystem {
 
 contract HelloFactory {
 
-    function createHS() returns (address hsAddr) {
+    function createHS() returns (address _hsAddr) {
         return address(new HelloSystem());
     }
 
-    function deleteHS(address hs){
+    function deleteHS(address _hs){
         HelloSystem(hs).remove();
     }
 
@@ -137,6 +148,42 @@ contract HelloFactory {
 ```
 
 Notice what happened here. We're creating a new contract but we aren't adding it to a mapping or other variable, instead we just create it and pass its address back to the caller. We need the `deleteHS` function because the creator of all the `HelloSystem` contracts is `HelloFactory`, which means that `HelloFactory` is the only contract (or account) that is allowed to remove them.
+
+If however, we wanted to be able to share our factory amongst other other parties, and maintain control over whether our contract lives or dies, this would be an incorrect design. Due to a subtle feature of solidity smart contracts, the calling address is the address of the `HelloFactory` contract. Therefore, only `HelloFactory` has the ability to create and delete accounts and an unexpected party could delete your `HelloSystem` that you created using the factory. To correct this, we need to alter our functions.
+
+```javascript
+pragma solidity ^0.4.6; 
+
+contract HelloSystem {
+
+    address owner;
+
+    //we now try passing in the address, rather than assume that the calling address is the owner
+    function HelloSystem(address _creator){
+        owner = _creator;
+    }
+
+    function remove(address _remover) { 
+        if (_remover == owner){
+            selfdestruct(owner);
+        }
+    }
+}
+
+contract HelloFactory {
+
+    function createHS() returns (address _hsAddr) {
+        return address(new HelloSystem(msg.sender));
+    }
+
+    function deleteHS(address hs){
+        HelloSystem(hs).remove(msg.sender);
+    }
+
+}
+```
+
+This however can get chaotic when trying to organize an agreement amongst a small group of parties. What if someone 
 
 ## Account permissions and contract dependencies
 
@@ -160,6 +207,8 @@ We need to use permissions like this because each contract is a separate account
 We're now going to make a simple bank account contract that lets people deposit and withdraw money (Ether). We're going to start by putting all the blockchain logic in one single contract.
 
 ```javascript
+pragma solidity ^0.4.6;
+
 contract Bank {
 
     // We want an owner that is allowed to selfdestruct.
@@ -172,18 +221,19 @@ contract Bank {
         owner = msg.sender;
     }
 
-    // This will take the value of the transaction and add to the senders account.
-    function deposit() {
+    // This will take the value of the transaction and add to the senders account. Note the payable modifier at the end that
+    // denotes whether or not an account can receiver Ether.
+    function deposit() payable {
         balances[msg.sender] += msg.value;
     }
 
-    // Attempt to withdraw the given 'amount' of Ether from the account.
-    function withdraw(uint amount) {
+    // Attempt to withdraw the given 'amount' of Ether from the account. We set a bool to determine if the send fails or not.
+    function withdraw(uint _amount) returns (bool) {
         // Skip if someone tries to withdraw 0 or if they don't have enough Ether to make the withdrawal.
-        if (balances[msg.sender] < amount || amount == 0)
+        if (balances[msg.sender] < _amount || _amount == 0)
             return;
-        balances[msg.sender] -= amount;
-        msg.sender.send(amount);
+        balances[msg.sender] -= _amount;
+        return msg.sender.send(_amount);
     }
 
     function remove() {
@@ -200,6 +250,8 @@ This contract will let other accounts deposit and withdraw token balances, but i
 If we want the bank contract to be more suited for a system, we could change it into something like this:
 
 ```javascript
+pragma solidity ^0.4.6;
+
 contract Bank {
 
     address owner;
@@ -212,24 +264,24 @@ contract Bank {
     }
 
     // This will take the value of the transaction and add to the senders account.
-    function deposit(address customer) returns (bool res) {
+    function deposit(address _customer) payable returns (bool res) {
         // If the amount they send is 0, return false.
         if (msg.value == 0){
             return false;
         }
-        balances[customer] += msg.value;
+        balances[_customer] += msg.value;
         return true;
     }
 
     // Attempt to withdraw the given 'amount' of Ether from the account.
-    function withdraw(address customer, uint amount) returns (bool res) {
+    function withdraw(address _customer, uint _amount) returns (bool res) {
         // Skip if someone tries to withdraw 0 or if they don't have
         // enough Ether to make the withdrawal.
-        if (balances[customer] < amount || amount == 0)
+        if (balances[_customer] < _amount || _amount == 0) {
             return false;
-        balances[customer] -= amount;
-        msg.sender.send(amount);
-        return true;
+        }
+        balances[_customer] -= _amount;
+        return _customer.send(_amount); //returns false on failure to send the stated amount, true on success
     }
 
     function remove() {
@@ -243,6 +295,7 @@ contract Bank {
 Now let us make a simple fund management contract that takes a bank contract address as a parameter. It also deploys the bank contract automatically and keeps track of it.
 
 ```javascript
+pragma solidity ^0.4.6;
 // The bank contract
 contract Bank {
     // All the logic from the bank contract.
@@ -263,22 +316,19 @@ contract FundManager {
     }
 
     // Attempt to deposit the given 'amount' of Ether to the account.
-    function deposit() returns (bool res) {
+    function deposit() payable returns (bool res) {
         if (msg.value == 0){
             return false;
         }
-        if ( bank == 0x0 ) {
-            // If the user sent money, we should return it if we can't deposit.
-            msg.sender.send(msg.value);
-            return false;
+        if (bank == 0x0) {
+            // If the user sent money, we should return it if we can't deposit using the throw statement.
+            throw;
         }
 
         // Use the interface to call on the bank contract. We pass msg.value along as well.
         bool success = Bank(bank).deposit.value(msg.value)(msg.sender);
-
-        // If the transaction failed, return the Ether to the caller.
-        if (!success) {
-            msg.sender.send(msg.value);
+        if (success != true) {
+            throw;
         }
         return success;
     }
@@ -288,16 +338,9 @@ contract FundManager {
         if ( bank == 0x0 ) {
             return false;
         }
-        // Use the interface to call on the bank contract.
-        bool success = Bank(bank).withdraw(msg.sender, amount);
-
-        // If the transaction succeeded, pass the Ether on to the caller.
-        if (success) {
-            msg.sender.send(amount);
-        }
-        return success;
+        // Use the interface to call on the bank contract and pass back Ether to the caller
+        return Bank(bank).withdraw(msg.sender, amount);
     }
-
 }
 ```
 
@@ -306,6 +349,8 @@ Banking can now be made from the fund manager. It is possible to pass transactio
 What we should be doing here is work with an interface instead and allow the bank account to be swapped out:
 
 ```javascript
+pragma solidity ^0.4.6;
+
 contract FundManager {
 
     address owner;
@@ -323,7 +368,7 @@ contract FundManager {
     // *************************************************************************
 
     // Add a new bank address to the contract.
-    function setBank(address newBank) constant returns (bool res) {
+    function setBank(address newBank) returns (bool res) {
         if (msg.sender != owner){
             return false;
         }
@@ -333,23 +378,20 @@ contract FundManager {
 
     // *************************************************************************
 
-    // Attempt to withdraw the given 'amount' of Ether from the account.
-    function deposit() returns (bool res) {
+    // Attempt to deposit the given 'amount' of Ether to the account.
+    function deposit() payable returns (bool res) {
         if (msg.value == 0){
             return false;
         }
-        if ( bank == 0x0 ) {
-            // If the user sent money, we should return it if we can't deposit.
-            msg.sender.send(msg.value);
-            return false;
+        if (bank == 0x0) {
+            // If the user sent money, we should return it if we can't deposit using the throw statement.
+            throw;
         }
 
         // Use the interface to call on the bank contract. We pass msg.value along as well.
         bool success = Bank(bank).deposit.value(msg.value)(msg.sender);
-
-        // If the transaction failed, return the Ether to the caller.
-        if (!success) {
-            msg.sender.send(msg.value);
+        if (success != true) {
+            throw;
         }
         return success;
     }
@@ -359,14 +401,8 @@ contract FundManager {
         if ( bank == 0x0 ) {
             return false;
         }
-        // Use the interface to call on the bank contract.
-        bool success = Bank(bank).withdraw(msg.sender, amount);
-
-        // If the transaction succeeded, pass the Ether on to the caller.
-        if (success) {
-            msg.sender.send(amount);
-        }
-        return success;
+        // Use the interface to call on the bank contract and pass back Ether to the caller
+        return Bank(bank).withdraw(msg.sender, amount);
     }
 
 }
@@ -379,6 +415,8 @@ This system is better, but it is still not very flexible; nor is it safe. For on
 First, let us add some simple user permission levels to the fund manager. We only use the value 0 for no permissions, and 1 for banking permissions at this point, but we use a `uint` instead of a `bool` so that we may extend it later. We will also make it possible to set the owner of the bank contract, so that we can set the owner address at any time instead of automatically assigning when the contract is deployed.
 
 ```javascript
+pragma solidity ^0.4.6;
+
 contract Bank {
 
     address owner;
@@ -386,8 +424,7 @@ contract Bank {
     mapping (address => uint) balances;
 
     // Constructor
-    function Bank(){
-    }
+    function Bank(){}
 
     function setOwner(address newOwner) returns (bool res) {
         // IMPORTANT: We don't want to allow the user to be reassigned, except maybe by the
@@ -400,25 +437,24 @@ contract Bank {
     }
 
     // This will take the value of the transaction and add to the senders account.
-    function deposit(address customer) returns (bool res) {
-        if (msg.sender != owner){
+    function deposit(address _customer) payable returns (bool res) {
+        // If the amount they send is 0, return false.
+        if (msg.value == 0){
             return false;
         }
-        balances[customer] += msg.value;
+        balances[_customer] += msg.value;
         return true;
     }
 
     // Attempt to withdraw the given 'amount' of Ether from the account.
-    function withdraw(address customer, uint amount) returns (bool res) {
-        if (msg.sender != owner){
+    function withdraw(address _customer, uint _amount) returns (bool res) {
+        // Skip if someone tries to withdraw 0 or if they don't have
+        // enough Ether to make the withdrawal.
+        if (balances[_customer] < _amount || _amount == 0) {
             return false;
         }
-        // Skip if someone tries to withdraw 0 or if they don't have enough Ether to make the withdrawal.
-        if (balances[customer] < amount || amount == 0)
-            return false;
-        balances[customer] -= amount;
-        msg.sender.send(amount);
-        return true;
+        balances[_customer] -= _amount;
+        return _customer.send(_amount); //returns false on failure to send the stated amount, true on success
     }
 
     function remove() {
@@ -478,7 +514,7 @@ contract FundManager {
     }
 
     // Set the permissions for a user.
-    function setPermission(address user, uint perm) constant returns (bool res) {
+    function setPermission(address user, uint perm) returns (bool res) {
         if (msg.sender != owner){
             return false;
         }
@@ -488,15 +524,14 @@ contract FundManager {
 
     // *************************************************************************
 
-    // Attempt to withdraw the given 'amount' of Ether from the account.
-    function deposit() returns (bool res) {
+    // Attempt to deposit the given 'amount' of Ether to the account.
+    function deposit() payable returns (bool res) {
         if (msg.value == 0){
             return false;
         }
-        if ( bank == 0x0 ) {
-            // If the user sent money, we should return it if we can't deposit.
-            msg.sender.send(msg.value);
-            return false;
+        if (bank == 0x0) {
+            // If the user sent money, we should return it if we can't deposit using the throw statement.
+            throw;
         }
         // NEW
         // *********************************************************************
@@ -504,13 +539,10 @@ contract FundManager {
             return false;
         }
         // *********************************************************************
-
         // Use the interface to call on the bank contract. We pass msg.value along as well.
         bool success = Bank(bank).deposit.value(msg.value)(msg.sender);
-
-        // If the transaction failed, return the Ether to the caller.
         if (!success) {
-            msg.sender.send(msg.value);
+            throw;
         }
         return success;
     }
@@ -520,22 +552,14 @@ contract FundManager {
         if ( bank == 0x0 ) {
             return false;
         }
-
         // NEW
         // ***********************************************************************
         if(perms[msg.sender] != 1){
             return false;
         }
         // ***********************************************************************
-
-        // Use the interface to call on the bank contract.
-        bool success = Bank(bank).withdraw(msg.sender, amount);
-
-        // If the transaction succeeded, pass the Ether on to the caller.
-        if (success) {
-            msg.sender.send(amount);
-        }
-        return success;
+        // Use the interface to call on the bank contract and pass back Ether to the caller
+        return Bank(bank).withdraw(msg.sender, amount);
     }
 
 }
@@ -573,9 +597,9 @@ The purpose of these contracts is only to manage other contracts. Their main tas
 
 Application logic contracts contains application-specific code. Generally speaking, if the contract utilizes controllers and other contracts to perform application specific tasks it's an ALC.
 
-### 5) Utility contracts
+### 5) Utility/Library contracts
 
-These type of contracts usually perform a specific task, and can be called by other contracts without restrictions. It could be a contract that hashes strings using some algorithm, provide random numbers, or other things. They normally don't need a lot of storage, and often have few or no dependencies.
+These type of contracts usually perform a specific task, and can be called by other contracts without restrictions. It could be a contract that hashes strings using some algorithm, provide random numbers, or other things. They normally don't need a lot of storage, and often have few or no dependencies. This is why they may be best written as a library contract and imported wherever they are needed for maximum reuse.
 
 The rationale for this division will be laid out after we've tried to apply it to the fund manager system, as it will be a lot more clear then.
 
@@ -594,18 +618,38 @@ Also, this permissions chart is not complete. First of all, the owner could be a
 Now we have to tie this all together. We need to make sure that the two controller-database pairs finds eachother, and that the fund manager finds the two controllers, but instead of keeping this type of logic in the contracts themselves we will break it out and put it into CMC contracts. If we wanted to do this right we would probably add one CMC for managing the controller-database flow for the bank, one for permissions and an additional one for the system as a whole, giving it a tree-like structure, but for simplicity we're going to flatten things and go with a standard CMC for everything:
 
 ```javascript
-// The top level CMC
-contract Doug {
+pragma solidity ^0.4.6;
 
+//our first utility contract. This will be discussed further on in this tutorial.
+contract owned {
+    function owned() { owner = msg.sender; }
     address owner;
 
-    // This is where we keep all the contracts.
-    mapping (bytes32 => address) contracts;
-
-    modifier onlyOwner { //a modifier to reduce code replication
-        if (msg.sender == owner) // this ensures that only the owner can access the function
-            _
+    // This contract only defines a modifier but does not use
+    // it - it will be used in derived contracts.
+    // The function body is inserted where the special symbol
+    // "_;" in the definition of a modifier appears.
+    // This means that if the owner calls this function, the
+    // function is executed. Otherwise, an exception is
+    // thrown.
+    modifier onlyOwner {
+        if (msg.sender != owner)
+            throw;
+        _;
     }
+}
+
+// The top level CMC inheriting an owned contract to denote that the creator is the owner
+contract Doug is owned {
+
+    // This is where we keep all the contracts.
+    mapping (bytes32 => address) public contracts;
+    /* We make the contracts object public so that we can make a getter function that essentially maps to the below function
+    //
+    //  function getContract(string name) constant returns (address addr) {
+    //      return contracts[name];
+        }
+    */
 
     function addContract(bytes32 name, address addr) onlyOwner {
         contracts[name] = addr;
@@ -617,10 +661,6 @@ contract Doug {
         }
         contracts[name] = 0x0;
         return true;
-    }
-
-    function getContract(bytes32 name) constant returns (address addr) {
-        return contracts[name];
     }
 
     function remove() onlyOwner {
@@ -691,6 +731,8 @@ Controllers would use Doug to check to make sure the caller is "fundmanager", an
 This is all the contracts in their final form.
 
 ```javascript
+
+pragma solidity ^0.4.6;
 // Base class for contracts that are used in a doug system.
 contract DougEnabled {
     address DOUG;
@@ -714,22 +756,30 @@ contract DougEnabled {
 
 }
 
-// The Doug contract.
-contract Doug {
-
+//our first utility contract. This will be discussed further on in this tutorial.
+contract owned {
+    function owned() { owner = msg.sender; }
     address owner;
+
+    // This contract only defines a modifier but does not use
+    // it - it will be used in derived contracts.
+    // The function body is inserted where the special symbol
+    // "_;" in the definition of a modifier appears.
+    // This means that if the owner calls this function, the
+    // function is executed. Otherwise, an exception is
+    // thrown.
+    modifier onlyOwner {
+        if (msg.sender != owner)
+            throw;
+        _;
+    }
+}
+
+// The Doug contract.
+contract Doug is owned {
 
     // This is where we keep all the contracts.
     mapping (bytes32 => address) public contracts;
-
-    modifier onlyOwner { //a modifier to reduce code replication
-        if (msg.sender == owner) // this ensures that only the owner can access the function
-            _
-    }
-    // Constructor
-    function Doug(){
-        owner = msg.sender;
-    }
 
     // Add a new contract to Doug. This will overwrite an existing contract.
     function addContract(bytes32 name, address addr) onlyOwner returns (bool result) {
@@ -774,7 +824,55 @@ contract Doug {
 
 // Interface for getting contracts from Doug
 contract ContractProvider {
-    function contracts(bytes32 name) returns (address addr) {}
+    function contracts(bytes32 name) returns (address addr);
+}
+
+// The fund manager
+contract FundManager is DougEnabled, owned {
+    // Attempt to withdraw the given 'amount' of Ether from the account.
+    function deposit() payable returns (bool res) {
+        if (msg.value == 0){
+            return false;
+        }
+        address bank = ContractProvider(DOUG).contracts("bank");
+        address permsdb = ContractProvider(DOUG).contracts("permsdb");
+        if ( bank == 0x0 || permsdb == 0x0 || PermissionsDb(permsdb).perms(msg.sender) < 1)
+            // If the user sent money, we should return it if we can't deposit.
+            throw;
+
+        // Use the interface to call on the bank contract. We pass msg.value along as well.
+        bool success = Bank(bank).deposit.value(msg.value)(msg.sender);
+
+        // If the transaction failed, return the Ether to the caller.
+        if (!success)
+            throw;
+        return success;
+    }
+
+    // Attempt to withdraw the given 'amount' of Ether from the account.
+    function withdraw(uint amount) returns (bool res) {
+        if (amount == 0){
+            return false;
+        }
+        address bank = ContractProvider(DOUG).contracts("bank");
+        address permsdb = ContractProvider(DOUG).contracts("permsdb");
+        if ( bank == 0x0 || permsdb == 0x0 || PermissionsDb(permsdb).perms(msg.sender) < 1) {
+            return false;
+        }
+
+        // Use the interface to call on the bank contract to return the ether that the user is owed.
+        return Bank(bank).withdraw(msg.sender, amount);
+    }
+
+    // Set the permissions for a given address.
+    function setPermission(address addr, uint8 permLvl) onlyOwner returns (bool res) {
+        address perms = ContractProvider(DOUG).contracts("perms");
+        if ( perms == 0x0 ) {
+            return false;
+        }
+        return Permissions(perms).setPermission(addr,permLvl);
+    }
+
 }
 
 // Base class for contracts that only allow the fundmanager to call them.
@@ -791,17 +889,33 @@ contract FundManagerEnabled is DougEnabled {
     }
 }
 
+// Permissions
+contract Permissions is FundManagerEnabled {
+
+    // Set the permissions of an account.
+    function setPermission(address _addr, uint8 _perm) returns (bool res) {
+        if (!isFundManager()){
+            return false;
+        }
+        address permdb = ContractProvider(DOUG).contracts("permsdb");
+        if (permdb == 0x0) {
+            return false;
+        }
+        return PermissionsDb(permdb).setPermission(_addr, _perm);
+    }
+}
+
 // Permissions database
 contract PermissionsDb is DougEnabled {
 
     mapping (address => uint8) public perms;
 
     // Set the permissions of an account.
-    function setPermission(address addr, uint8 perm) returns (bool res) {
+    function setPermission(address _addr, uint8 _perm) returns (bool res) {
         if(DOUG != 0x0){
             address permC = ContractProvider(DOUG).contracts("perms");
             if (msg.sender == permC ){
-                perms[addr] = perm;
+                perms[_addr] = _perm;
                 return true;
             }
             return false;
@@ -812,19 +926,42 @@ contract PermissionsDb is DougEnabled {
 
 }
 
-// Permissions
-contract Permissions is FundManagerEnabled {
+// The bank
+contract Bank is FundManagerEnabled {
 
-    // Set the permissions of an account.
-    function setPermission(address addr, uint8 perm) returns (bool res) {
+    // Attempt to deposit the given 'amount' of Ether to the account.
+    function deposit(address _userAddr) payable returns (bool res) {
+        if (!isFundManager()){
+            throw;
+        }
+        address bankdb = ContractProvider(DOUG).contracts("bankdb");
+        if (bankdb == 0x0) {
+            // If the user sent money, we should return it if we can't deposit.
+            throw;
+        }
+        // Use the interface to call on the bank contract. We pass msg.value along as well.
+        return BankDb(bankdb).deposit.value(msg.value)(_userAddr);
+    }
+
+    // Attempt to withdraw the given 'amount' of Ether from the account.
+    function withdraw(address _userAddr, uint _amount) returns (bool res) {
         if (!isFundManager()){
             return false;
         }
-        address permdb = ContractProvider(DOUG).contracts("permsdb");
-        if ( permdb == 0x0 ) {
+        address bankdb = ContractProvider(DOUG).contracts("bankdb");
+        if (bankdb == 0x0) {
             return false;
         }
-        return PermissionsDb(permdb).setPermission(addr, perm);
+
+        // Use the interface to call on the bank contract.
+        bool success = BankDb(bankdb).withdraw(_userAddr, _amount);
+
+        if (!success) {
+            throw;
+        }
+
+        // If the transaction succeeded, pass the Ether on to the caller.
+        return _userAddr.send(_amount);
     }
 
 }
@@ -834,152 +971,31 @@ contract BankDb is DougEnabled {
 
     mapping (address => uint) public balances;
 
-    function deposit(address addr) returns (bool res) {
+    function deposit(address _addr) payable returns (bool res) {
         if(DOUG != 0x0){
             address bank = ContractProvider(DOUG).contracts("bank");
             if (msg.sender == bank ){
-                balances[addr] += msg.value;
+                balances[_addr] += msg.value;
                 return true;
             }
         }
         // Return if deposit cannot be made.
-        msg.sender.send(msg.value);
-        return false;
+        throw;
     }
 
-    function withdraw(address addr, uint amount) returns (bool res) {
+    function withdraw(address _addr, uint _amount) returns (bool res) {
         if(DOUG != 0x0){
             address bank = ContractProvider(DOUG).contracts("bank");
             if (msg.sender == bank ){
-                uint oldBalance = balances[addr];
-                if(oldBalance >= amount){
-                    msg.sender.send(amount);
-                    balances[addr] = oldBalance - amount;
-                    return true;
+                uint oldBalance = balances[_addr];
+                if(oldBalance >= _amount){
+                    balances[_addr] = oldBalance - _amount;
+                    return msg.sender.send(_amount);
                 }
             }
         }
-        return false;
+        throw;
     }
-
-}
-
-// The bank
-contract Bank is FundManagerEnabled {
-
-    // Attempt to withdraw the given 'amount' of Ether from the account.
-    function deposit(address userAddr) returns (bool res) {
-        if (!isFundManager()){
-            return false;
-        }
-        address bankdb = ContractProvider(DOUG).contracts("bankdb");
-        if ( bankdb == 0x0 ) {
-            // If the user sent money, we should return it if we can't deposit.
-            msg.sender.send(msg.value);
-            return false;
-        }
-
-        // Use the interface to call on the bank contract. We pass msg.value along as well.
-        bool success = BankDb(bankdb).deposit.value(msg.value)(userAddr);
-
-        // If the transaction failed, return the Ether to the caller.
-        if (!success) {
-            msg.sender.send(msg.value);
-        }
-        return success;
-    }
-
-    // Attempt to withdraw the given 'amount' of Ether from the account.
-    function withdraw(address userAddr, uint amount) returns (bool res) {
-        if (!isFundManager()){
-            return false;
-        }
-        address bankdb = ContractProvider(DOUG).contracts("bankdb");
-        if ( bankdb == 0x0 ) {
-            return false;
-        }
-
-        // Use the interface to call on the bank contract.
-        bool success = BankDb(bankdb).withdraw(userAddr, amount);
-
-        // If the transaction succeeded, pass the Ether on to the caller.
-        if (success) {
-            userAddr.send(amount);
-        }
-        return success;
-    }
-
-}
-
-// The fund manager
-contract FundManager is DougEnabled {
-
-    // We still want an owner.
-    address owner;
-
-    // Constructor
-    function FundManager(){
-        owner = msg.sender;
-    }
-
-    // Attempt to withdraw the given 'amount' of Ether from the account.
-    function deposit() returns (bool res) {
-        if (msg.value == 0){
-            return false;
-        }
-        address bank = ContractProvider(DOUG).contracts("bank");
-        address permsdb = ContractProvider(DOUG).contracts("permsdb");
-        if ( bank == 0x0 || permsdb == 0x0 || PermissionsDb(permsdb).perms(msg.sender) < 1) {
-            // If the user sent money, we should return it if we can't deposit.
-            msg.sender.send(msg.value);
-            return false;
-        }
-
-        // Use the interface to call on the bank contract. We pass msg.value along as well.
-        bool success = Bank(bank).deposit.value(msg.value)(msg.sender);
-
-        // If the transaction failed, return the Ether to the caller.
-        if (!success) {
-            msg.sender.send(msg.value);
-        }
-        return success;
-    }
-
-    // Attempt to withdraw the given 'amount' of Ether from the account.
-    function withdraw(uint amount) returns (bool res) {
-        if (amount == 0){
-            return false;
-        }
-        address bank = ContractProvider(DOUG).contracts("bank");
-        address permsdb = ContractProvider(DOUG).contracts("permsdb");
-        if ( bank == 0x0 || permsdb == 0x0 || PermissionsDb(permsdb).perms(msg.sender) < 1) {
-            // If the user sent money, we should return it if we can't deposit.
-            msg.sender.send(msg.value);
-            return false;
-        }
-
-        // Use the interface to call on the bank contract.
-        bool success = Bank(bank).withdraw(msg.sender, amount);
-
-        // If the transaction succeeded, pass the Ether on to the caller.
-        if (success) {
-            msg.sender.send(amount);
-        }
-        return success;
-    }
-
-    // Set the permissions for a given address.
-    function setPermission(address addr, uint8 permLvl) returns (bool res) {
-        if (msg.sender != owner){
-            return false;
-        }
-        address perms = ContractProvider(DOUG).contracts("perms");
-        if ( perms == 0x0 ) {
-            return false;
-        }
-        return Permissions(perms).setPermission(addr,permLvl);
-    }
-
 }
 ```
 
@@ -1024,16 +1040,13 @@ function Permissions() {
 }
 ```
 
-What we’d do next is replace some of the checks for (`msg.sender == owner`) with permissions checks.
+What we’d do next is replace some of the checks for (`msg.sender == owner`) with permissions checks. We can do this using a modifier.
 
 Current setPermissions function in the fund manager.
 
 ```javascript
 // Set the permissions for a given address.
-function setPermission(address addr, uint8 permLvl) constant returns (bool res) {
-    if (msg.caller != owner){
-        return false;
-    }
+function setPermission(address addr, uint8 permLvl) onlyOwner returns (bool res) {
     address perms = Doug(DOUG).getContract("perms");
     if ( perms == 0x0 ) {
         return false;
@@ -1062,8 +1075,8 @@ function setPermission(address addr, uint8 permLvl) returns (bool res) {
 
 ## Cost benefit analysis
 
-Given all of the extra contracts and indirection that's needed, we may ask if it's even worth doing. For example, if all I want to do is to deposit some money, why do i have to call one contract that calls a second contract that calls a third one, also doing calls to a fourth one all the way?
+Given all of the extra contracts and indirection that's needed, we may ask if it's even worth doing. For example, if all I want to do is to deposit some money, why do I have to call one contract that calls a second contract that calls a third one, also doing calls to a fourth one all the way?
 
-There are some things to consider when deciding how the system should be designed. Modularity is good, but it comes with a price. All this indirection means more calls and more processing, which means the cost for executing the code is higher, and the added bytecode makes storing the contracts more expensive.
+There are some things to consider when deciding how the system should be designed. Modularity is good for making your code reusable and for increasing the security of your contracts, but it does come with something of a price. All this indirection means more calls and more processing, which means the cost for executing the code is higher, and the added bytecode makes storing the contracts more expensive.
 
 There is also the matter of trust, but I treat that in the beginning of the document.
