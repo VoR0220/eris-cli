@@ -49,7 +49,6 @@ func TestJobManagerBasicRunning(t *testing.T) {
 		filename = "./epm.yaml"
 		jobsfile = `
 jobs:
-
 - name: setStorageBase
   set:
     val: 5
