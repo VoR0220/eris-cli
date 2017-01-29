@@ -1,256 +1,395 @@
 package jobs
 
 import (
-	"encoding/hex"
+	"bytes"
+	"encoding/binary"
+	"encoding/json"
 	"fmt"
+	"reflect"
 	"strconv"
+	"strings"
 
-	"github.com/eris-ltd/eris/definitions"
+	//"github.com/eris-ltd/eris/interpret"
 	"github.com/eris-ltd/eris/log"
-	"github.com/eris-ltd/eris/pkgs/abi"
-	"github.com/eris-ltd/eris/util"
-
-	"github.com/eris-ltd/eris-db/client"
-	"github.com/eris-ltd/eris-db/logging/loggers"
 )
 
-func QueryContractJob(query *definitions.QueryContract, do *definitions.Do) (string, []*definitions.Variable, error) {
-	// Preprocess variables. We don't preprocess data as it is processed by ReadAbiFormulateCall
-	query.Source, _ = util.PreProcess(query.Source, do)
-	query.Destination, _ = util.PreProcess(query.Destination, do)
-	query.ABI, _ = util.PreProcess(query.ABI, do)
+// ------------------------------------------------------------------------
+// Testing Jobs
+// ------------------------------------------------------------------------
 
-	var queryDataArray []string
-	var err error
-	query.Function, queryDataArray, err = util.PreProcessInputData(query.Function, query.Data, do, false)
-	if err != nil {
-		return "", make([]*definitions.Variable, 0), err
-	}
-	// Set the from and the to
-	fromAddrBytes, err := hex.DecodeString(query.Source)
-	if err != nil {
-		return "", make([]*definitions.Variable, 0), err
-	}
-	toAddrBytes, err := hex.DecodeString(query.Destination)
-	if err != nil {
-		return "", make([]*definitions.Variable, 0), err
-	}
-
-	// Get the packed data from the ABI functions
-	var data string
-	var packedBytes []byte
-	if query.ABI == "" {
-		packedBytes, err = abi.ReadAbiFormulateCall(query.Destination, query.Function, queryDataArray, do)
-		data = hex.EncodeToString(packedBytes)
-	} else {
-		packedBytes, err = abi.ReadAbiFormulateCall(query.ABI, query.Function, queryDataArray, do)
-		data = hex.EncodeToString(packedBytes)
-	}
-	if err != nil {
-		var str, err = util.ABIErrorHandler(do, err, nil, query)
-		return str, make([]*definitions.Variable, 0), err
-	}
-	dataBytes, err := hex.DecodeString(data)
-	if err != nil {
-		return "", make([]*definitions.Variable, 0), err
-	}
-
-	// Call the client
-	nodeClient := client.NewErisNodeClient(do.ChainURL, loggers.NewNoopInfoTraceLogger())
-	result, _, err := nodeClient.QueryContract(fromAddrBytes, toAddrBytes, dataBytes)
-	if err != nil {
-		return "", make([]*definitions.Variable, 0), err
-	}
-
-	// Formally process the return
-	log.WithField("res", result).Debug("Decoding Raw Result")
-	if query.ABI == "" {
-		log.WithField("abi", query.Destination).Debug()
-		query.Variables, err = abi.ReadAndDecodeContractReturn(query.Destination, query.Function, result, do)
-	} else {
-		log.WithField("abi", query.ABI).Debug()
-		query.Variables, err = abi.ReadAndDecodeContractReturn(query.ABI, query.Function, result, do)
-	}
-	if err != nil {
-		return "", make([]*definitions.Variable, 0), err
-	}
-
-	result2 := util.GetReturnValue(query.Variables)
-	// Finalize
-	if result2 != "" {
-		log.WithField("=>", result2).Warn("Return Value")
-	} else {
-		log.Debug("No return.")
-	}
-	return result2, query.Variables, nil
+// aka. Simulated Call.
+type QueryContract struct {
+	// (Optional, if account job or global account set) address of the account from which to send (the
+	// public key for the account must be available to eris-keys)
+	Source string `mapstructure:"source" json:"source" yaml:"source" toml:"source"`
+	// (Required) address of the contract which should be called
+	Destination string `mapstructure:"destination" json:"destination" yaml:"destination" toml:"destination"`
+	// (Required) data which should be called. will use the eris-abi tooling under the hood to formalize the
+	// transaction. QueryContract will usually be used with "accessor" functions in contracts
+	Function string `mapstructure:"function" json:"function" yaml:"function" toml:"function"`
+	// (Optional) data to be used in the function arguments. Will use the eris-abi tooling under the hood to formalize the
+	// transaction.
+	Data interface{} `mapstructure:"data" json:"data" yaml:"data" toml:"data"`
+	// (Optional) location of the abi file to use (can be relative path or in abi path)
+	// deployed contracts save ABI artifacts in the abi folder as *both* the name of the contract
+	// and the address where the contract was deployed to
+	ABI string `mapstructure:"abi" json:"abi" yaml:"abi" toml:"abi"`
 }
 
-func QueryAccountJob(query *definitions.QueryAccount, do *definitions.Do) (string, error) {
-	// Preprocess variables
-	query.Account, _ = util.PreProcess(query.Account, do)
-	query.Field, _ = util.PreProcess(query.Field, do)
-
-	// Perform Query
-	arg := fmt.Sprintf("%s:%s", query.Account, query.Field)
-	log.WithField("=>", arg).Info("Querying Account")
-
-	result, err := util.AccountsInfo(query.Account, query.Field, do)
+func (qContract *QueryContract) PreProcess(jobs *Jobs) (err error) {
+	qContract.Source, _, err = preProcessString(qContract.Source, jobs)
 	if err != nil {
-		return "", err
+		return err
 	}
-
-	// Result
-	if result != "" {
-		log.WithField("=>", result).Warn("Return Value")
-	} else {
-		log.Debug("No return.")
+	qContract.Destination, _, err = preProcessString(qContract.Destination, jobs)
+	if err != nil {
+		return err
 	}
-	return result, nil
+	qContract.Function, _, err = preProcessString(qContract.Function, jobs)
+	if err != nil {
+		return err
+	}
+	qContract.Data, err = preProcessInterface(qContract.Data, jobs)
+	if err != nil {
+		return err
+	}
+	return
 }
 
-func QueryNameJob(query *definitions.QueryName, do *definitions.Do) (string, error) {
-	// Preprocess variables
-	query.Name, _ = util.PreProcess(query.Name, do)
-	query.Field, _ = util.PreProcess(query.Field, do)
-
-	// Peform query
-	log.WithFields(log.Fields{
-		"name":  query.Name,
-		"field": query.Field,
-	}).Info("Querying")
-	result, err := util.NamesInfo(query.Name, query.Field, do)
-	if err != nil {
-		return "", err
-	}
-
-	if result != "" {
-		log.WithField("=>", result).Warn("Return Value")
-	} else {
-		log.Debug("No return.")
-	}
-	return result, nil
+type QueryAccount struct {
+	// (Required) address of the account which should be queried
+	Account string `mapstructure:"account" json:"account" yaml:"account" toml:"account"`
+	// (Required) field which should be queried. If users are trying to query the permissions of the
+	// account one can get either the `permissions.base` which will return the base permission of the
+	// account, or one can get the `permissions.set` which will return the setBit of the account.
+	Field string `mapstructure:"field" json:"field" yaml:"field" toml:"field"`
 }
 
-func QueryValsJob(query *definitions.QueryVals, do *definitions.Do) (string, error) {
-	var result string
-
-	// Preprocess variables
-	query.Field, _ = util.PreProcess(query.Field, do)
-
-	// Peform query
-	log.WithField("=>", query.Field).Info("Querying Vals")
-	result, err := util.ValidatorsInfo(query.Field, do)
+func (qAccount *QueryAccount) PreProcess(jobs *Jobs) (err error) {
+	qAccount.Field, _, err = preProcessString(qAccount.Field, jobs)
 	if err != nil {
-		return "", err
+		return err
 	}
-
-	if result != "" {
-		log.WithField("=>", result).Warn("Return Value")
-	} else {
-		log.Debug("No return.")
+	qAccount.Account, _, err = preProcessString(qAccount.Account, jobs)
+	if err != nil {
+		return err
 	}
-	return result, nil
+	return
 }
 
-func AssertJob(assertion *definitions.Assert, do *definitions.Do) (string, error) {
-	var result string
-	// Preprocess variables
-	assertion.Key, _ = util.PreProcess(assertion.Key, do)
-	assertion.Relation, _ = util.PreProcess(assertion.Relation, do)
-	assertion.Value, _ = util.PreProcess(assertion.Value, do)
+type QueryName struct {
+	// (Required) name which should be queried
+	Name string `mapstructure:"name" json:"name" yaml:"name" toml:"name"`
+	// (Required) field which should be queried (generally will be "data" to get the registered "name")
+	Field string `mapstructure:"field" json:"field" yaml:"field" toml:"field"`
+}
 
-	// Switch on relation
-	log.WithFields(log.Fields{
-		"key":      assertion.Key,
-		"relation": assertion.Relation,
-		"value":    assertion.Value,
-	}).Info("Assertion =>")
+func (qName *QueryName) PreProcess(jobs *Jobs) (err error) {
+	qName.Field, _, err = preProcessString(qName.Field, jobs)
+	if err != nil {
+		return err
+	}
+	qName.Name, _, err = preProcessString(qName.Name, jobs)
+	if err != nil {
+		return err
+	}
+	return
+}
 
-	switch assertion.Relation {
-	case "==", "eq":
-		/*log.Debug("Compare", strings.Compare(assertion.Key, assertion.Value))
-		log.Debug("UTF8?: ", utf8.ValidString(assertion.Key))
-		log.Debug("UTF8?: ", utf8.ValidString(assertion.Value))
-		log.Debug("UTF8?: ", utf8.RuneCountInString(assertion.Key))
-		log.Debug("UTF8?: ", utf8.RuneCountInString(assertion.Value))*/
-		if assertion.Key == assertion.Value {
-			return assertPass("==", assertion.Key, assertion.Value)
-		} else {
-			return assertFail("==", assertion.Key, assertion.Value)
+type QueryVals struct {
+	// (Required) should be of the set ["bonded_validators" or "unbonding_validators"] and it will
+	// return a comma separated listing of the addresses which fall into one of those categories
+	Field string `mapstructure:"field" json:"field" yaml:"field" toml:"field"`
+}
+
+func (qVals *QueryVals) PreProcess(jobs *Jobs) (err error) {
+	qVals.Field, _, err = preProcessString(qVals.Field, jobs)
+	if err != nil {
+		return err
+	}
+	if qVals.Field != "bonded_validators" && qVals.Field != "unbonded_validators" {
+		return fmt.Errorf("Invalid value passed in, expected bonded_validators or unbonded_validators, got %v", qVals.Field)
+	}
+	return
+}
+
+type Assert struct {
+	// (Required) key which should be used for the assertion. This is usually known as the "expected"
+	// value in most testing suites
+	Key interface{} `mapstructure:"key" json:"key" yaml:"key" toml:"key"`
+	// (Required) must be of the set ["eq", "ne", "ge", "gt", "le", "lt", "==", "!=", ">=", ">", "<=", "<"]
+	// establishes the relation to be tested by the assertion. If a strings key:value pair is being used
+	// only the equals or not-equals relations may be used as the key:value will try to be converted to
+	// ints for the remainder of the relations. if strings are passed to them then eris:pm will return an
+	// error
+	Relation string `mapstructure:"relation" json:"relation" yaml:"relation" toml:"relation"`
+	// (Required) value which should be used for the assertion. This is usually known as the "given"
+	// value in most testing suites. Generally it will be a variable expansion from one of the query
+	// jobs.
+	Value interface{} `mapstructure:"val" json:"val" yaml:"val" toml:"val"`
+}
+
+func (assert *Assert) PreProcess(jobs *Jobs) (err error) {
+	failed := "Assertion Failed!: " //useful appendage for errors
+
+	convertString := func(toChange string, reference interface{}) (interface{}, error) {
+		//go func for converting underlying string types to the reference type
+		//something to note: if strconv fails, the strconv error will not be reported
+		//due to it being handled with the invalid conversion error. If something is fishy in failing,
+		//please do try to get this error to return.
+		switch reference.(type) {
+		case bool:
+			return strconv.ParseBool(toChange)
+		case int:
+			if strings.HasPrefix(toChange, "0x") {
+				return strconv.ParseInt(toChange[2:], 16, 0)
+			}
+			return strconv.Atoi(toChange)
+		case []interface{}:
+			var changed []interface{}
+			err = json.NewDecoder(strings.NewReader(toChange)).Decode(&changed)
+			return changed, err
+		default:
+			return nil, fmt.Errorf(failed+"Do not have conversion for string %v to type %T", toChange, reference)
 		}
+	}
+
+	// initial preprocess
+	if assert.Key, err = preProcessInterface(assert.Key, jobs); err != nil {
+		return fmt.Errorf("Assertion Failed!: %v", err)
+	}
+	log.Warn(assert.Key)
+	if assert.Relation, _, err = preProcessString(assert.Relation, jobs); err != nil {
+		return fmt.Errorf("Assertion Failed!: %v", err)
+	}
+	log.Warn(assert.Relation)
+	if assert.Value, err = preProcessInterface(assert.Value, jobs); err != nil {
+		return fmt.Errorf("Assertion Failed!: %v", err)
+	}
+
+	// catch invalid types early
+	keyString := assert.Key.(Type).StringResult
+	valString := assert.Value.(Type).StringResult
+
+	keyString = strings.Trim(keyString, " \n\t")
+	valString = strings.Trim(valString, " \n\t")
+
+	keyType := assert.Key.(Type).ActualResult
+	valType := assert.Value.(Type).ActualResult
+
+	// second round of preprocessing
+	switch assert.Relation {
+	case ">", "gt", ">=", "ge", "<", "lt", "<=", "le":
+		switch keyType.(type) {
+		default:
+			return fmt.Errorf(failed+"Cannot use key type %T in ordered comparison.", keyType)
+		case string:
+			keyType, err = strconv.Atoi(keyType.(string))
+			if err != nil {
+				return err
+			}
+		case int:
+			break
+		}
+
+		switch valType.(type) {
+		default:
+			return fmt.Errorf(failed+"Cannot use val type %T in ordered comparison.", valType)
+		case string:
+			valType, err = strconv.Atoi(valType.(string))
+			if err != nil {
+				return err
+			}
+		case int:
+			break
+		}
+
+	case "==", "eq", "!=", "ne":
+		invalidConversion := fmt.Errorf(failed+"Cannot convert key type %T to val type %T", keyType, valType)
+		defer func() { //since reflect.Convert panicks if it can't be converted, we have this handler here
+			if recover() != nil {
+				err = invalidConversion
+			}
+		}()
+		valReflectType := reflect.TypeOf(valType)
+		keyReflectType := reflect.TypeOf(keyType)
+		if valReflectType != keyReflectType {
+
+			switch valType.(type) {
+			case []interface{}:
+				switch keyType.(type) {
+				case string:
+					keyType, err = convertString(keyType.(string), valType)
+				case bool, int:
+					return invalidConversion
+				default:
+					keyVal := reflect.ValueOf(keyType)
+					keyType = keyVal.Convert(valReflectType)
+				}
+			case int:
+				switch keyType.(type) {
+				case string:
+					keyType, err = convertString(keyType.(string), valType)
+				case bool:
+					if valType.(int) != 0 && valType.(int) != 1 {
+						return invalidConversion
+					}
+					valType = valType != 0
+				default:
+					keyVal := reflect.ValueOf(keyType)
+					keyType = keyVal.Convert(valReflectType)
+				}
+			case bool:
+				switch keyType.(type) {
+				case int:
+					if keyType.(int) != 0 && keyType.(int) != 1 {
+						return invalidConversion
+					}
+					keyType = keyType != 0
+				case []byte:
+					buf := bytes.NewBuffer(keyType.([]byte))
+					if keyType, err = binary.ReadVarint(buf); err != nil {
+						return err
+					} else if keyType.(int) != 0 && keyType.(int) != 1 {
+						return invalidConversion
+					}
+					keyType = keyType != 0
+				case string:
+					keyType, err = convertString(keyType.(string), valType)
+				default:
+					return invalidConversion
+				}
+			case []byte:
+				switch keyType.(type) {
+				case string:
+					valType = string(valType.([]byte))
+				case bool:
+					valType = valType.([]byte)[len(valType.([]byte))-1] != 0
+				default:
+					return invalidConversion
+				}
+			case string:
+				switch keyType.(type) {
+				case int, bool, []interface{}:
+					valType, err = convertString(valType.(string), keyType)
+				default:
+					keyVal := reflect.ValueOf(keyType)
+					keyType = keyVal.Convert(valReflectType)
+				}
+			default:
+				valVal := reflect.ValueOf(valType)
+				valType = valVal.Convert(keyReflectType)
+			}
+			if err != nil {
+				return invalidConversion
+			}
+		}
+	default:
+		return fmt.Errorf(failed+"Invalid assertion relation %v", assert.Relation)
+	}
+	assert.Key = Type{StringResult: keyString, ActualResult: keyType}
+	assert.Value = Type{StringResult: valString, ActualResult: valType}
+	return err
+}
+
+func (assert *Assert) Execute(jobs *Jobs) (*JobResults, error) {
+	// first class functions for passing and failing
+	pass := func() (*JobResults, error) {
+		log.Warn("Assertion Passed!")
+		return &JobResults{}, nil
+	}
+	fail := func() (*JobResults, error) {
+		return &JobResults{}, fmt.Errorf("Assertion Failed!")
+	}
+	isOrderedInt := func(i interface{}) bool {
+		switch i.(type) {
+		case int:
+			return true
+		default:
+			return false
+		}
+	}
+	// Switch on relation
+	stringKey := assert.Key.(Type).StringResult
+	stringVal := assert.Value.(Type).StringResult
+	typeKey := assert.Key.(Type).ActualResult
+	typeVal := assert.Value.(Type).ActualResult
+
+	log.WithFields(log.Fields{
+		"key":      assert.Key.(Type),
+		"relation": assert.Relation,
+		"value":    assert.Value.(Type),
+	}).Error("Assertion =>")
+
+	keyVal := reflect.ValueOf(typeKey)
+	valVal := reflect.ValueOf(typeVal)
+	switch assert.Relation {
+	case "==", "eq":
+		switch typeKey.(type) {
+		default:
+			if stringKey == stringVal || keyVal.Interface() == valVal.Interface() {
+				return pass()
+			} else {
+				return fail()
+			}
+		case []interface{}:
+			if stringKey == stringVal || reflect.DeepEqual(typeKey, typeVal) {
+				return pass()
+			} else {
+				return fail()
+			}
+		}
+
 	case "!=", "ne":
-		if assertion.Key != assertion.Value {
-			return assertPass("!=", assertion.Key, assertion.Value)
-		} else {
-			return assertFail("!=", assertion.Key, assertion.Value)
+		switch typeKey.(type) {
+		default:
+			if stringKey != stringVal || keyVal.Interface() != valVal.Interface() {
+				return pass()
+			} else {
+				return fail()
+			}
+		case []interface{}:
+			if stringKey != stringVal || !reflect.DeepEqual(typeKey, typeVal) {
+				return pass()
+			} else {
+				return fail()
+			}
 		}
 	case ">", "gt":
-		k, v, err := bulkConvert(assertion.Key, assertion.Value)
-		if err != nil {
-			return convFail()
-		}
-		if k > v {
-			return assertPass(">", assertion.Key, assertion.Value)
+		if stringKey > stringVal || typeKey.(int) > typeVal.(int) {
+			return pass()
 		} else {
-			return assertFail(">", assertion.Key, assertion.Value)
+			return fail()
 		}
 	case ">=", "ge":
-		k, v, err := bulkConvert(assertion.Key, assertion.Value)
-		if err != nil {
-			return convFail()
-		}
-		if k >= v {
-			return assertPass(">=", assertion.Key, assertion.Value)
+		if isOrderedInt(typeKey) {
+			typeKey = typeKey.(int)
 		} else {
-			return assertFail(">=", assertion.Key, assertion.Value)
+			typeKey = typeKey.(string)
+		}
+		if isOrderedInt(typeVal) {
+			typeVal = typeVal.(int)
+		} else {
+			typeVal = typeVal.(string)
+		}
+		if stringKey >= stringVal || typeKey.(int) >= typeVal.(int) {
+			return pass()
+		} else {
+			return fail()
 		}
 	case "<", "lt":
-		k, v, err := bulkConvert(assertion.Key, assertion.Value)
-		if err != nil {
-			return convFail()
-		}
-		if k < v {
-			return assertPass("<", assertion.Key, assertion.Value)
+		if stringKey < stringVal || typeKey.(int) < typeVal.(int) {
+			return pass()
 		} else {
-			return assertFail("<", assertion.Key, assertion.Value)
+			return fail()
 		}
 	case "<=", "le":
-		k, v, err := bulkConvert(assertion.Key, assertion.Value)
-		if err != nil {
-			return convFail()
-		}
-		if k <= v {
-			return assertPass("<=", assertion.Key, assertion.Value)
+		if stringKey == stringVal || typeKey.(int) == typeVal.(int) {
+			return pass()
 		} else {
-			return assertFail("<=", assertion.Key, assertion.Value)
+			return fail()
 		}
+	default:
+		return &JobResults{}, fmt.Errorf("Improper relation detected.")
 	}
-
-	return result, nil
-}
-
-func bulkConvert(key, value string) (int, int, error) {
-	k, err := strconv.Atoi(key)
-	if err != nil {
-		return 0, 0, err
-	}
-	v, err := strconv.Atoi(value)
-	if err != nil {
-		return 0, 0, err
-	}
-	return k, v, nil
-}
-
-func assertPass(typ, key, val string) (string, error) {
-	log.WithField("=>", fmt.Sprintf("%s %s %s", key, typ, val)).Warn("Assertion Succeeded")
-	return "passed", nil
-}
-
-func assertFail(typ, key, val string) (string, error) {
-	log.WithField("=>", fmt.Sprintf("%s %s %s", key, typ, val)).Warn("Assertion Failed")
-	return "failed", fmt.Errorf("assertion failed")
-}
-
-func convFail() (string, error) {
-	return "", fmt.Errorf("The Key of your assertion cannot be converted into an integer.\nFor string conversions please use the equal or not equal relations.")
 }
