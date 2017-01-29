@@ -1,19 +1,19 @@
 package pkgs
 
 import (
-	"fmt"
+	//"fmt"
 	"io/ioutil"
 	"os"
 	//"path"
 	"path/filepath"
-	"strings"
+	//"strings"
 	"testing"
 
-	"github.com/eris-ltd/eris/chains"
+	//"github.com/eris-ltd/eris/chains"
 	"github.com/eris-ltd/eris/config"
-	"github.com/eris-ltd/eris/data"
+	//"github.com/eris-ltd/eris/data"
 	"github.com/eris-ltd/eris/definitions"
-	//"github.com/eris-ltd/eris/loaders"
+	"github.com/eris-ltd/eris/loaders"
 	"github.com/eris-ltd/eris/log"
 	"github.com/eris-ltd/eris/services"
 	"github.com/eris-ltd/eris/testutil"
@@ -35,7 +35,7 @@ func TestMain(m *testing.M) {
 	// log.SetLevel(log.DebugLevel)
 
 	testutil.IfExit(testutil.Init(testutil.Pull{
-		Images:   []string{"data", "db", "keys", "quay.io/eris/compilers"},
+		Images:   []string{"data", "db", "pm", "cm", "keys", "quay.io/eris/compilers"},
 		Services: []string{"keys", "ipfs", "compilers"},
 	}))
 
@@ -46,8 +46,71 @@ func TestMain(m *testing.M) {
 	os.Exit(exitCode)
 }
 
-/*
-func TestServicesBooted(t *testing.T) {
+func TestJobManagerBasicRunning(t *testing.T) {
+	const (
+		filename = "./epm.yaml"
+		jobsfile = `
+jobs:
+
+- name: setStorageBase
+  set:
+    val: 5
+
+- name: setAccount
+  account:
+    address: 1234567890
+`
+	)
+	err := ioutil.WriteFile(filename, []byte(jobsfile), 0644)
+	defer os.Remove(filename)
+	if err != nil {
+		t.Fatalf("cannot write config file %v", err)
+	}
+	do := definitions.NowDo()
+	do.YAMLPath = filename
+	output, err := loaders.LoadJobs(do)
+	if err != nil {
+		t.Fatalf("could not load jobs: %v", err)
+	}
+	if err = output.RunJobs(); err != nil {
+		t.Fatalf("running jobs resulted in err: %v", err)
+	}
+}
+
+func TestJobManagerLegacy(t *testing.T) {
+	const (
+		filename = "./epm.yaml"
+		jobsfile = `
+jobs:
+
+- name: setStorageBase
+  job:
+    set:
+      val: 5
+      
+- name: something
+  job:
+    account:
+      address: 123457890
+`
+	)
+	err := ioutil.WriteFile(filename, []byte(jobsfile), 0644)
+	defer os.Remove(filename)
+	if err != nil {
+		t.Fatalf("cannot write config file %v", err)
+	}
+	do := definitions.NowDo()
+	do.YAMLPath = filename
+	output, err := loaders.LoadJobs(do)
+	if err != nil {
+		t.Fatalf("could not load jobs: %v", err)
+	}
+	if err = output.RunJobs(); err != nil {
+		t.Fatalf("running jobs resulted in err: %v", err)
+	}
+}
+
+/*func TestServicesBooted(t *testing.T) {
 	defer testutil.RemoveAllContainers()
 
 	create(t, chainName)
@@ -933,7 +996,7 @@ func TestExportEPMOutputsNotInMainDir(t *testing.T) {
 	if out2, _ := ioutil.ReadFile(filepath.Join(dir2, "epm.csv")); !strings.Contains(string(out2), contents) {
 		t.Fatalf("unexpected error in getting epm.csv, expected %s, got %s", contents, out2)
 	}
-}*/
+}
 
 func startKeys() error {
 	doKeys := definitions.NowDo()
@@ -944,7 +1007,7 @@ func startKeys() error {
 		return err
 	}
 	return nil
-}
+}*/
 
 func killKeys() {
 	do := definitions.NowDo()
@@ -954,6 +1017,7 @@ func killKeys() {
 	services.KillService(do)
 }
 
+/*
 func writeGoodPkgJson() error {
 	if _, err := os.Stat(goodPkg); os.IsNotExist(err) {
 		if err := os.MkdirAll(filepath.Dir(goodPkg), 0755); err != nil {
@@ -1109,4 +1173,4 @@ func exec(t *testing.T, name string, args []string) string {
 	}
 
 	return buf.String()
-}
+}*/

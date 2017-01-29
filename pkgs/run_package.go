@@ -2,23 +2,15 @@ package pkgs
 
 import (
 	"fmt"
-	"runtime"
 
 	"github.com/eris-ltd/eris/definitions"
 	"github.com/eris-ltd/eris/loaders"
-	"github.com/eris-ltd/eris/log"
 	"github.com/eris-ltd/eris/pkgs/jobs"
 	"github.com/eris-ltd/eris/services"
 	"github.com/eris-ltd/eris/util"
 )
 
 func RunPackage(do *definitions.Do) error {
-
-	// clears job_outputs file
-	jobs.ClearJobResults()
-	// useful for debugging
-	printPathPackage(do)
-
 	// sets do.ChainIP and do.ChainPort
 	if err := setChainIPandPort(do); err != nil {
 		return err
@@ -29,13 +21,10 @@ func RunPackage(do *definitions.Do) error {
 		return err
 	}
 
-	var err error
 	// Load the package if it doesn't exist
-	if do.Package == nil {
-		do.Package, err = loaders.LoadPackage(do.YAMLPath)
-		if err != nil {
-			return err
-		}
+	loadedJobs, err := loaders.LoadJobs(do)
+	if err != nil {
+		return err
 	}
 
 	if !do.RemoteCompiler {
@@ -47,7 +36,7 @@ func RunPackage(do *definitions.Do) error {
 		}
 	}
 
-	return jobs.RunJobs(do)
+	return loadedJobs.RunJobs()
 }
 
 func setChainIPandPort(do *definitions.Do) error {
@@ -55,18 +44,15 @@ func setChainIPandPort(do *definitions.Do) error {
 	if !util.IsChain(do.ChainName, true) {
 		return fmt.Errorf("chain (%s) is not running", do.ChainName)
 	}
-	if runtime.GOOS == "windows" || runtime.GOOS == "darwin" {
-		do.ChainIP = "127.0.0.1"
-	} else {
-		containerName := util.ContainerName(definitions.TypeChain, do.ChainName)
 
-		cont, err := util.DockerClient.InspectContainer(containerName)
-		if err != nil {
-			return util.DockerError(err)
-		}
+	containerName := util.ContainerName(definitions.TypeChain, do.ChainName)
 
-		do.ChainIP = cont.NetworkSettings.IPAddress
+	cont, err := util.DockerClient.InspectContainer(containerName)
+	if err != nil {
+		return util.DockerError(err)
 	}
+
+	do.ChainIP = cont.NetworkSettings.IPAddress
 	do.ChainPort = "46657" // [zr] this can be hardcoded even if [--publish] is used
 
 	return nil
@@ -104,11 +90,4 @@ func getLocalCompilerData(do *definitions.Do) error {
 
 	do.Compiler = fmt.Sprintf("http://%s:9099", IPAddress)
 	return nil
-}
-
-func printPathPackage(do *definitions.Do) {
-	log.WithField("=>", do.Compiler).Info("Using Compiler at")
-	log.WithField("=>", do.ChainName).Info("Using Chain at")
-	log.WithField("=>", do.ChainID).Debug("With ChainID")
-	log.WithField("=>", do.Signer).Info("Using Signer at")
 }
