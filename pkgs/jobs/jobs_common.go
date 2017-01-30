@@ -186,7 +186,7 @@ type LegacyJob struct {
 }
 
 func (job *LegacyJob) deprecationNotice() {
-	log.Warn("Deprecation Warning: the `job` field is no longer required and is soon to be deprecated. Please rid it from your file and use the new format.")
+	log.Warn("Deprecation Warning: the `job` field is no longer required and is deprecated. Please rid it from your file and use the new format.")
 }
 
 func (job *Job) swapLegacyJob() {

@@ -1,11 +1,48 @@
 package jobs
 
+import (
+	"github.com/eris-ltd/eris/compilers"
+)
+
 // ------------------------------------------------------------------------
 // Contracts Jobs
 // ------------------------------------------------------------------------
 
 type PackageDeploy struct {
 	// TODO
+}
+
+type Compile struct {
+	// embedded interface to allow us to access the Compile function regardless of which language is chosen. This gets set in the preprocessing stage.
+	compilers.Compiler
+	// List of files with which you would like to compile with. Optional setting if creating a plugin compiler setting for a deploy job.
+	Files []string `mapstructure:"files" yaml:"files"`
+	// (Optional) the version of the compiler to use, if left blank, defaults to whatever the default is in compilers.toml, if that's blank, defaults to "latest" tag of compilers image
+	Version string `mapstructure:"version" yaml:"version"`
+	// One of the following fields is required.
+
+	// Solidity Compiler
+	Solc compilers.SolcTemplate `mapstructure:"solc" yaml:"solc"`
+}
+
+func (compile *Compile) PreProcess(jobs *Jobs) (err error) {
+	//Normal preprocessing
+	if compile.Version, _, err = preProcessString(compile.Version, jobs); err != nil {
+		return err
+	}
+
+	for i, file := range compile.Files {
+		if compile.Files[i], _, err = preProcessString(file, jobs); err != nil {
+			return err
+		}
+	}
+
+	switch {
+	case compile.Solc != compilers.SolcTemplate{}:
+		compile.Compiler = compile.Solc
+	default:
+		return fmt.Errorf("Could not find compiler to use")
+	}
 }
 
 type Deploy struct {
