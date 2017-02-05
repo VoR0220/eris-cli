@@ -23,6 +23,8 @@ type Compile struct {
 
 	// Solidity Compiler
 	Solc compilers.SolcTemplate `mapstructure:"solc" yaml:"solc"`
+	//Use defaults
+	UseDefault bool
 }
 
 func (compile *Compile) PreProcess(jobs *Jobs) (err error) {

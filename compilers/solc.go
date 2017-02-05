@@ -1,11 +1,11 @@
 package compilers
 
 import (
+	"path"
+	"strconv"
 	"strings"
 
 	"github.com/eris-ltd/eris/util"
-
-	docker "github.com/fsouza/go-dockerclient"
 )
 
 //The following represents solidity outputs
@@ -46,14 +46,41 @@ type SolcTemplate struct {
 	// (Optional) if true, optimizes solidity code
 	Optimize bool `mapstructure:"optimize" yaml:"optimize"`
 	// (Optional) the number of optimization runs to run on solidity
-	OptimizeRuns uint `mapstructure:"optimize-runs" yaml:"optimize-runs"`
+	OptimizeRuns uint64 `mapstructure:"optimize-runs" yaml:"optimize-runs"`
 	// (Optional) For anything else we may have missed
 	Exec string `mapstructure:"exec" yaml:"exec"`
 }
 
-func (s *SolcTemplate) Compile(files []string) (Return, error) {
+func (s *SolcTemplate) Compile(files []string, version string) (Return, error) {
 	solcExecute := []string{"solc"}
+	solReturn := &SolcReturn{}
+	var warning string
+	var binFiles map[string]*SolcItems
+	var solFiles []string
+	//get docker repo
+	//append tag
 
+	//check files for .bin extension for linking addresses
+	//separate .sol and .bin files
+	//link .bins separately
+	for _, file := range files {
+		ext := path.Ext(file)
+		switch ext {
+		case ".sol":
+			solFiles := append(solFiles, file)
+		case ".bin":
+			binCommand := []string{"cat", file, "|", "solc", "--link", "--libraries", strings.Join(s.Libraries, ",")}
+			output, err := executeCompilerCommand()
+			if err != nil {
+				return nil, err
+			}
+			solReturn.Contracts[strings.TrimRight(file, ext)] = &SolcItems{Bin: strings.TrimSpace(string(output))}
+		default:
+			return nil, fmt.Errorf("Unexpected file extension found during compilation for solc: %v", file)
+		}
+	}
+
+	//assemble command
 	switch {
 	case s.Exec != "":
 		solcExecute = append(solcExecute, s.Exec)
@@ -71,17 +98,30 @@ func (s *SolcTemplate) Compile(files []string) (Return, error) {
 		}
 		if s.Optimize {
 			solcExecute = append(solcExecute, "--optimize")
-		}
-		if s.OptimizeRuns != nil {
-			solcExecute = append(solcExecute, "--optimize-runs", strconv.FormatUint(s.OptimizeRuns, 10))
+
+			if s.OptimizeRuns != 0 {
+				solcExecute = append(solcExecute, "--optimize-runs", strconv.FormatUint(s.OptimizeRuns, 10))
+			}
 		}
 	}
-	solcExecute = append(solcExecute, files...)
+	solcExecute = append(solcExecute, solFiles...)
 	finalCommand := strings.Join(solcExecute, " ")
+	//Execute command
+	output, err := executeCompilerCommand()
+	//Parse output into a return
 
-	volume, err := util.DockerClient.CreateVolume(opts)
-	if err != nil {
+	trimmedOutput := strings.TrimSpace(string(output))
+	jsonBeginsCertainly := strings.Index(trimmedOutput, `{"contracts":`)
+
+	if jsonBeginsCertainly > 0 {
+		warning = trimmedOutput[:jsonBeginsCertainly]
+		trimmedOutput = trimmedOutput[jsonBeginsCertainly:]
+	}
+
+	log.WithField("Json: ", output).Debug("Command Output")
+	if err = json.Unmarshal([]byte(trimmedOutput), solReturn); err != nil {
 		return nil, err
 	}
-	util.DockerClient.CreateContainer(opts)
+
+	return Return{solReturn}, nil
 }

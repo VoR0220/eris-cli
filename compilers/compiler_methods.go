@@ -2,6 +2,7 @@ package compilers
 
 import (
 	"os"
+	"os/exec"
 
 	"github.com/eris-ltd/eris/util"
 
@@ -20,5 +21,13 @@ func Install(language, version string) error {
 }
 
 func List(image string) ([]string, error) {
+	return []string{}, nil
+}
 
+func executeCompilerCommand(image, command string) ([]byte, error) {
+	pwd, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+	return exec.Command("docker", "run", "-v", pwd+":/toCompile", "-w", "/toCompile", "--rm", image, command).Output()
 }
