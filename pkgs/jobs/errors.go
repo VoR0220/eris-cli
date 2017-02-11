@@ -8,7 +8,7 @@ import (
 	"github.com/eris-ltd/eris/log"
 )
 
-func MintChainErrorHandler(jobs *Jobs, err error) (string, error) {
+func MintChainErrorHandler(jobs *Jobs, err error) (*JobResults, error) {
 	log.WithFields(log.Fields{
 		"defAddr": jobs.Account,
 		"chainID": jobs.ChainID,
@@ -16,7 +16,7 @@ func MintChainErrorHandler(jobs *Jobs, err error) (string, error) {
 		"rawErr": err,
 	}).Error("")
 
-	return "", fmt.Errorf(`
+	return nil, fmt.Errorf(`
 There has been an error talking to your eris chain.
 
 %v

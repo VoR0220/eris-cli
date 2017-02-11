@@ -88,7 +88,7 @@ func txFinalize(tx txs.Tx, jobs *Jobs) (*JobResults, error) {
 	}
 	// if there is nothing to unpack then just return.
 	if result == nil {
-		return nil
+		return nil, nil
 	}
 
 	// Unpack and display for the user.
@@ -113,5 +113,5 @@ func txFinalize(tx txs.Tx, jobs *Jobs) (*JobResults, error) {
 		}
 	}
 
-	return nil
+	return &JobResults{Type{hash, result.Hash}, nil}, nil
 }
