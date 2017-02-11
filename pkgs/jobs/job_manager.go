@@ -12,8 +12,9 @@ import (
 
 type Jobs struct {
 	Account       string
-	NodeClient    *client.ErisNodeClient
-	KeyClient     *keys.ErisKeyClient
+	NodeClient    client.NodeClient
+	KeyClient     keys.KeyClient
+	ChainID       string
 	PublicKey     string
 	DefaultAddr   string
 	DefaultAmount string

@@ -17,9 +17,6 @@ func RunPackage(do *definitions.Do) error {
 	}
 
 	do.ChainURL = fmt.Sprintf("tcp://%s:%s", do.ChainIP, do.ChainPort)
-	if err := util.GetChainID(do); err != nil {
-		return err
-	}
 
 	// Load the package if it doesn't exist
 	loadedJobs, err := loaders.LoadJobs(do)

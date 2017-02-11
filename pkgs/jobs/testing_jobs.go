@@ -3,6 +3,7 @@ package jobs
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"reflect"
@@ -77,6 +78,46 @@ func (qAccount *QueryAccount) PreProcess(jobs *Jobs) (err error) {
 	return
 }
 
+func (qAccount *QueryAccount) Execute(jobs *Jobs) (*JobResults, error) {
+	addrBytes, err := hex.DecodeString(qAccount.Account)
+	if err != nil {
+		return nil, fmt.Errorf("Account Addr %s is improper hex: %v", qAccount.Account, err)
+	}
+
+	if r, err := jobs.NodeClient.GetAccount(addrBytes); err != nil {
+		return nil, err
+	} else if r == nil {
+		return nil, fmt.Errorf("Account %s does not exist", qAccount.Account)
+	} else {
+		var result Type
+		invalidAccount := fmt.Errorf("Invalid account field queried %v", qAccount.Field)
+
+		switch {
+		case strings.Contains(qAccount.Field, "permissions"):
+			permissions := strings.Split(qAccount.Field, ".")
+			if len(permissions) > 1 {
+				return nil, invalidAccount
+			}
+			switch permissions[1] {
+			case "roles":
+				result = Type{strings.Join(r.Permissions.Roles, ","), r.Permissions.Roles}
+			case "base", "perms":
+				result = Type{strconv.Itoa(int(r.Permissions.Base.Perms)), r.Permissions.Base.Perms}
+			case "set":
+				result = Type{strconv.Itoa(int(r.Permissions.Base.SetBit)), r.Permissions.Base.SetBit}
+			default:
+				return nil, invalidAccount
+			}
+		case qAccount.Field == "balance":
+			result = Type{strconv.Itoa(int(r.Balance)), r.Balance}
+		default:
+			return nil, invalidAccount
+		}
+
+		return &JobResults{result, nil}, nil
+	}
+}
+
 type QueryName struct {
 	// (Required) name which should be queried
 	Name string `mapstructure:"name" json:"name" yaml:"name" toml:"name"`
@@ -96,6 +137,27 @@ func (qName *QueryName) PreProcess(jobs *Jobs) (err error) {
 	return
 }
 
+func (qName *QueryName) Execute(jobs *Jobs) (*JobResults, error) {
+	owner, data, expirationBlock, err := jobs.NodeClient.GetName(qName.Name)
+	if err != nil {
+		return nil, err
+	}
+	var result Type
+	switch qName.Field {
+	case "name":
+		result := Type{qName.Name, qName.Name}
+	case "owner":
+		result := Type{string(owner), owner}
+	case "data":
+		result := Type{data, data}
+	case "expires":
+		result := Type{strconv.Itoa(expirationBlock), expirationBlock}
+	default:
+		return nil, fmt.Errorf("Field %s not recognized", qName.Field)
+	}
+	return &JobResults{result, nil}, nil
+}
+
 type QueryVals struct {
 	// (Required) should be of the set ["bonded_validators" or "unbonding_validators"] and it will
 	// return a comma separated listing of the addresses which fall into one of those categories
@@ -111,6 +173,34 @@ func (qVals *QueryVals) PreProcess(jobs *Jobs) (err error) {
 		return fmt.Errorf("Invalid value passed in, expected bonded_validators or unbonded_validators, got %v", qVals.Field)
 	}
 	return
+}
+
+func (qVals *QueryVals) Execute(jobs *Jobs) (*JobResults, error) {
+	// Peform query
+	log.WithField("=>", qVals.Field).Info("Querying Vals")
+	height, bondedValidators, unbondingValidators, err := jobs.NodeClient.ListValidators()
+	if err != nil {
+		return nil, err
+	}
+
+	vals := []string{}
+	switch qVals.Field {
+	case "bonded_validators":
+		for _, v := range bondedValidators {
+			vals = append(vals, string(v.Address()))
+		}
+	case "unbonding_validators":
+		for _, v := range unbondingValidators {
+			vals = append(vals, string(v.Address()))
+		}
+	default:
+		return nil, fmt.Errorf("Field %s not recognized", qVals.Field)
+	}
+
+	return &JobResults{
+		FullResult:   Type{strings.Join(vals, ","), vals},
+		NamedResults: nil,
+	}, nil
 }
 
 type Assert struct {

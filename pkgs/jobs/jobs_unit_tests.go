@@ -7,11 +7,16 @@ import (
 	"testing"
 
 	"github.com/eris-ltd/eris/log"
+	"github.com/eris-ltd/eris/testutil"
 )
 
 func TestMain(m *testing.M) {
 	log.SetLevel(log.ErrorLevel)
+	testutil.IfExit(testutil.Init(testutil.Pull{
+		Images: []string{"data", "db", "keys", "ipfs"},
+	}))
 	exitCode := m.Run()
+	testutil.IfExit(testutil.TearDown())
 	os.Exit(exitCode)
 }
 
@@ -754,7 +759,7 @@ func TestPreProcessingThroughSet(t *testing.T) {
 			Type{"[false, true]", []interface{}{false, true}},
 		},
 
-		/* [rj] todo when I figure out docker linking to chains
+		/* [rj] todo when I figure out docker linking to chains and when bonding jobs come back
 		Question: For a set job should this resolve at time set job is referenced or when it is fired off?
 		{
 			"$block"

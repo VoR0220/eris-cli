@@ -78,48 +78,6 @@ func (job *Job) getType() (JobsRunner, error) {
 		}
 	}
 	return nil, fmt.Errorf("Could not find a job to execute.")
-	/*switch {
-	case job.Account != nil:
-		return job.Account, nil
-	case job.Set != nil:
-		return job.Set, nil
-	// Transaction jobs
-	case job.Send != nil:
-		return job.Send, nil
-	case job.RegisterName != nil:
-		return job.RegisterName, nil
-	case job.Permission != nil:
-		return job.Permission, nil
-	case job.Bond != nil:
-		return job.Bond, nil
-	case job.Unbond != nil:
-		return job.Unbond, nil
-	case job.Rebond != nil:
-		return job.Rebond, nil
-	// Contracts jobs
-	case job.Deploy != nil:
-		return job.Deploy, nil
-	case job.Call != nil:
-		return job.Call, nil
-	// State jobs
-	case job.RestoreState != nil:
-		return job.RestoreState, nil
-	case job.DumpState != nil:
-		return job.DumpState, nil
-	// Test jobs
-	case job.QueryAccount != nil:
-		return job.QueryAccount, nil
-	case job.QueryContract != nil:
-		return job.QueryContract, nil
-	case job.QueryName != nil:
-		return job.QueryName, nil
-	case job.QueryVals != nil:
-		return job.QueryVals, nil
-	case job.Assert != nil:
-		return job.Assert, nil
-	default:
-		return nil, fmt.Errorf("Could not find a job to execute.")
-	}*/
 }
 
 func (job *Job) announce(jobType JobsRunner) {
@@ -130,7 +88,7 @@ func (job *Job) announce(jobType JobsRunner) {
 }
 
 func (job *Job) beginJob(jobs *Jobs) (*JobResults, error) {
-	var jobType JobsCommon
+	var jobType JobsRunner
 	jobType, err := job.getType()
 	if err != nil {
 		return &JobResults{}, err

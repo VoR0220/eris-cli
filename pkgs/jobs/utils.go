@@ -5,7 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	//"github.com/eris-ltd/eris/log"
+
+	"github.com/eris-ltd/eris/log"
+
+	"github.com/eris-ltd/eris-db/client/rpc"
+	"github.com/eris-ltd/eris-db/txs"
 )
 
 //preprocesses an interface type into a type type
@@ -36,7 +40,7 @@ func preProcessInterface(toProcess interface{}, jobs *Jobs) (Type, error) {
 	case Type:
 		return typ, nil
 	default:
-		return Type{}, fmt.Errorf("Could not get epm type.")
+		return Type{}, fmt.Errorf("Could not get job type.")
 	}
 }
 
@@ -74,4 +78,40 @@ func useDefault(thisOne, defaultOne string) string {
 		return defaultOne
 	}
 	return thisOne
+}
+
+// This is a closer function which is called by most of the tx_run functions
+func txFinalize(tx txs.Tx, jobs *Jobs) (*JobResults, error) {
+	result, err := rpc.SignAndBroadcast(jobs.ChainID, jobs.NodeClient, jobs.KeyClient, tx, true, true, true)
+	if err != nil {
+		return MintChainErrorHandler(jobs, err)
+	}
+	// if there is nothing to unpack then just return.
+	if result == nil {
+		return nil
+	}
+
+	// Unpack and display for the user.
+	addr := fmt.Sprintf("%X", result.Address)
+	hash := fmt.Sprintf("%X", result.Hash)
+	blkHash := fmt.Sprintf("%X", result.BlockHash)
+	ret := fmt.Sprintf("%X", result.Return)
+
+	if result.Address != nil {
+		log.WithField("=>", addr).Warn("Address")
+		log.WithField("=>", hash).Info("Transaction Hash")
+	} else {
+		log.WithField("=>", hash).Warn("Transaction Hash")
+		log.WithField("=>", blkHash).Debug("Block Hash")
+		if len(result.Return) != 0 {
+			if ret != "" {
+				log.WithField("=>", ret).Warn("Return Value")
+			} else {
+				log.Debug("No return.")
+			}
+			log.WithField("=>", result.Exception).Debug("Exception")
+		}
+	}
+
+	return nil
 }

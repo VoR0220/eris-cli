@@ -1,5 +1,13 @@
 package jobs
 
+import (
+	"fmt"
+
+	"github.com/eris-ltd/eris/log"
+
+	"github.com/eris-ltd/eris-db/client/rpc"
+)
+
 // ------------------------------------------------------------------------
 // Transaction Jobs
 // ------------------------------------------------------------------------
@@ -37,6 +45,37 @@ func (send *Send) PreProcess(jobs *Jobs) (err error) {
 	send.Source = useDefault(send.Source, jobs.Account)
 	send.Amount = useDefault(send.Amount, jobs.DefaultAmount)
 	return nil
+}
+
+func (send *Send) Execute(jobs *Jobs) (*JobResults, error) {
+	// Use Default
+
+	// Don't use pubKey if account override
+	var oldKey string
+	if send.Source != jobs.Account {
+		oldKey = jobs.PublicKey
+		jobs.PublicKey = ""
+	}
+
+	// Formulate tx
+	log.WithFields(log.Fields{
+		"source":      send.Source,
+		"destination": send.Destination,
+		"amount":      send.Amount,
+	}).Info("Sending Transaction")
+
+	tx, err := rpc.Send(jobs.NodeClient, jobs.KeyClient, jobs.PublicKey, send.Source, send.Destination, send.Amount, send.Nonce)
+	if err != nil {
+		return MintChainErrorHandler(jobs, err)
+	}
+
+	// Don't use pubKey if account override
+	if send.Source != jobs.Account {
+		jobs.PublicKey = oldKey
+	}
+
+	// Sign, broadcast, display
+	return txFinalize(tx, jobs)
 }
 
 type RegisterName struct {
@@ -145,6 +184,10 @@ func (bond *Bond) PreProcess(jobs *Jobs) (err error) {
 	return nil
 }
 
+func (bond *Bond) Execute(jobs *Jobs) (*JobResults, error) {
+	return nil, fmt.Errorf("Job bond currently unimplemented.")
+}
+
 type Unbond struct {
 	// (Required) address of the account which to unbond
 	Account string `mapstructure:"account" json:"account" yaml:"account" toml:"account"`
@@ -167,6 +210,10 @@ func (unbond *Unbond) PreProcess(jobs *Jobs) (err error) {
 	return nil
 }
 
+func (unbond *Unbond) Execute(jobs *Jobs) (*JobResults, error) {
+	return nil, fmt.Errorf("Job unbond currently unimplemented.")
+}
+
 type Rebond struct {
 	// (Required) address of the account which to rebond
 	Account string `mapstructure:"account" json:"account" yaml:"account" toml:"account"`
@@ -187,4 +234,8 @@ func (rebond *Rebond) PreProcess(jobs *Jobs) error {
 	// Use defaults
 	rebond.Account = useDefault(rebond.Account, jobs.Account)
 	return nil
+}
+
+func (rebond *Rebond) Execute(jobs *Jobs) (*JobResults, error) {
+	return nil, fmt.Errorf("Job rebond currently unimplemented.")
 }
