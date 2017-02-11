@@ -28,8 +28,11 @@ func LoadJobs(do *definitions.Do) (*jobs.Jobs, error) {
 	jobset.DefaultAmount = do.DefaultAmount
 	jobset.DefaultFee = do.DefaultFee
 	jobset.DefaultGas = do.DefaultGas
-	jobset.JobMap = make(map[string]*jobs.JobResults)
-
+	jobset.JobMap = make(map[string]*jobs.JobResults) 
+	_, jobset.ChainID, _, err := jobset.NodeClient.ChainId()
+	if err != nil {
+		return nil, err
+	}
 	var epmJobs = viper.New()
 
 	// setup file

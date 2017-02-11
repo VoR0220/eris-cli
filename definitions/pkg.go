@@ -31,9 +31,7 @@ type Package struct {
 	SkipABIPath       bool
 
 	// from epm
-	Account   string
-	Jobs      []*Jobs
-	Libraries map[string]string
+	Account string
 }
 
 func BlankPackageDefinition() *PackageDefinition {
