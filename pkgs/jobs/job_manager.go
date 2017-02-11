@@ -119,12 +119,12 @@ func checkForDuplicateQueryOverwrite(name string, jobNames []string, defaultOver
 	return dup, defaultOverwrite, index
 }
 
-/*func (jobs *Jobs) postProcess(defaultOutput string) error {
+/*func (jobs *Jobs) postProcess() error {
 	switch defaultOutput {
 	case "csv":
 		log.Info("Writing [epm.csv] to current directory")
 		for _, job := range jobs {
-			if err := util.WriteJobResultCSV(job.JobName, job.JobResult); err != nil {
+			if err := WriteJobResultCSV(job.JobName, job.JobResult); err != nil {
 				return err
 			}
 		}
@@ -134,7 +134,7 @@ func checkForDuplicateQueryOverwrite(name string, jobNames []string, defaultOver
 		for _, job := range do.Package.Jobs {
 			results[job.JobName] = job.JobResult
 		}
-		return util.WriteJobResultJSON(results)
+		return WriteJobResultJSON(results)
 	}
 
 	return nil
