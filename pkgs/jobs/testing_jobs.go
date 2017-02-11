@@ -145,13 +145,13 @@ func (qName *QueryName) Execute(jobs *Jobs) (*JobResults, error) {
 	var result Type
 	switch qName.Field {
 	case "name":
-		result := Type{qName.Name, qName.Name}
+		result = Type{qName.Name, qName.Name}
 	case "owner":
-		result := Type{string(owner), owner}
+		result = Type{string(owner), owner}
 	case "data":
-		result := Type{data, data}
+		result = Type{data, data}
 	case "expires":
-		result := Type{strconv.Itoa(expirationBlock), expirationBlock}
+		result = Type{strconv.Itoa(expirationBlock), expirationBlock}
 	default:
 		return nil, fmt.Errorf("Field %s not recognized", qName.Field)
 	}
@@ -178,7 +178,7 @@ func (qVals *QueryVals) PreProcess(jobs *Jobs) (err error) {
 func (qVals *QueryVals) Execute(jobs *Jobs) (*JobResults, error) {
 	// Peform query
 	log.WithField("=>", qVals.Field).Info("Querying Vals")
-	height, bondedValidators, unbondingValidators, err := jobs.NodeClient.ListValidators()
+	_, bondedValidators, unbondingValidators, err := jobs.NodeClient.ListValidators()
 	if err != nil {
 		return nil, err
 	}

@@ -10,6 +10,7 @@ import (
 
 	"github.com/eris-ltd/eris-db/client"
 	"github.com/eris-ltd/eris-db/keys"
+	"github.com/eris-ltd/eris-db/logging/loggers"
 	"github.com/spf13/viper"
 )
 
@@ -18,8 +19,11 @@ func LoadJobs(do *definitions.Do) (*jobs.Jobs, error) {
 	var fileName = do.YAMLPath
 	var jobset = jobs.EmptyJobs()
 
-	jobset.NodeClient = client.NewErisNodeClient(do.ChainURL)
-	jobset.KeyClient = keys.NewErisKeyClient(do.Signer)
+	erisClient := client.NewErisNodeClient(do.ChainURL, loggers.NewNoopInfoTraceLogger())
+	_, chainID, _, err := erisClient.ChainId()
+
+	jobset.NodeClient = erisClient
+	jobset.KeyClient = keys.NewErisKeyClient(do.Signer, loggers.NewNoopInfoTraceLogger())
 	jobset.PublicKey = do.PublicKey
 	jobset.DefaultAddr = do.DefaultAddr
 	jobset.DefaultOutput = do.DefaultOutput
@@ -28,8 +32,9 @@ func LoadJobs(do *definitions.Do) (*jobs.Jobs, error) {
 	jobset.DefaultAmount = do.DefaultAmount
 	jobset.DefaultFee = do.DefaultFee
 	jobset.DefaultGas = do.DefaultGas
-	jobset.JobMap = make(map[string]*jobs.JobResults) 
-	_, jobset.ChainID, _, err := jobset.NodeClient.ChainId()
+	jobset.JobMap = make(map[string]*jobs.JobResults)
+	jobset.ChainID = chainID
+
 	if err != nil {
 		return nil, err
 	}
@@ -54,12 +59,12 @@ func LoadJobs(do *definitions.Do) (*jobs.Jobs, error) {
 	epmJobs.SetConfigName(bName)
 
 	// load file
-	if err := epmJobs.ReadInConfig(); err != nil {
+	if err = epmJobs.ReadInConfig(); err != nil {
 		return nil, fmt.Errorf("Sorry, the marmots were unable to load the eris jobs file. Please check your path.\nERROR =>\t\t\t%v", err)
 	}
 
 	// marshall file
-	if err := epmJobs.Unmarshal(jobset); err != nil {
+	if err = epmJobs.Unmarshal(jobset); err != nil {
 		return nil, fmt.Errorf("Sorry, the marmots could not figure that eris jobs file out.\nPlease check your epm.yaml is properly formatted.\n")
 	}
 
