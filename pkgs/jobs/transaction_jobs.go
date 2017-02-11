@@ -1,7 +1,10 @@
 package jobs
 
 import (
+	"encoding/csv"
 	"fmt"
+	"io"
+	"os"
 
 	"github.com/eris-ltd/eris/log"
 
@@ -97,6 +100,140 @@ type RegisterName struct {
 	Nonce string `mapstructure:"nonce" json:"nonce" yaml:"nonce" toml:"nonce"`
 }
 
+func (name *RegisterName) PreProcess(jobs *Jobs) (err error) {
+	name.Source, _, err = preProcessString(name.Source, jobs)
+	if err != nil {
+		return err
+	}
+	name.Name, _, err = preProcessString(name.Name, jobs)
+	if err != nil {
+		return err
+	}
+	name.Data, _, err = preProcessString(name.Data, jobs)
+	if err != nil {
+		return err
+	}
+	name.DataFile, _, err = preProcessString(name.DataFile, jobs)
+	if err != nil {
+		return err
+	}
+	name.Amount, _, err = preProcessString(name.Amount, jobs)
+	if err != nil {
+		return err
+	}
+	name.Fee, _, err = preProcessString(name.Fee, jobs)
+	if err != nil {
+		return err
+	}
+	name.Nonce, _, err = preProcessString(name.Nonce, jobs)
+	if err != nil {
+		return err
+	}
+
+	name.Source = useDefault(name.Source, jobs.Account)
+	name.Fee = useDefault(name.Fee, jobs.DefaultFee)
+	name.Amount = useDefault(name.Amount, jobs.DefaultAmount)
+
+	if name.DataFile != "" && name.Data != "" {
+		return fmt.Errorf("Cannot have both data and datafile field populated.")
+	}
+	return
+}
+
+func (name *RegisterName) Execute(jobs *Jobs) (*JobResults, error) {
+	// Don't use pubKey if account override
+	var oldKey string
+	swapKeyOut := func() {
+		if name.Source != jobs.Account {
+			oldKey = jobs.PublicKey
+			jobs.PublicKey = ""
+		}
+	}
+	swapKeyIn := func() {
+		// don't use pubKey if account override
+		if name.Source != jobs.Account {
+			jobs.PublicKey = oldKey
+		}
+	}
+
+	switch {
+	// If a data file is given it should be in csv format and
+	// it will be read first. Once the file is parsed and sent
+	// to the chain then a single nameRegTx will be sent if that
+	// has been populated.
+	case name.DataFile != "":
+		// open the file and use a reader
+		fileReader, err := os.Open(name.DataFile)
+		if err != nil {
+			return nil, err
+		}
+
+		defer fileReader.Close()
+		r := csv.NewReader(fileReader)
+		swapKeyOut()
+		// loop through the records
+		for {
+			// Read the record
+			record, err := r.Read()
+
+			// Catch the errors
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				return nil, err
+			}
+
+			// Sink the Amount into the third slot in the record if
+			// it doesn't exist
+			if len(record) <= 2 {
+				record = append(record, name.Amount)
+			}
+
+			// Send an individual Tx for the record
+			tx, err := rpc.Name(jobs.NodeClient, jobs.KeyClient, jobs.PublicKey, useDefault(record[0], jobs.Account),
+				useDefault(record[2], jobs.DefaultAmount), name.Nonce, name.Fee, record[0], record[1])
+			if err != nil {
+				return nil, err
+			}
+
+			resp, err := txFinalize(tx, jobs)
+			if err != nil {
+				return nil, err
+			}
+
+			n := fmt.Sprintf("%s:%s", record[0], record[1])
+			// TODO: fix this... simple and naive result just now.
+			if err = WriteJobResultCSV(n, resp.FullResult.StringResult); err != nil {
+				return nil, err
+			}
+		}
+		swapKeyIn()
+		return &JobResults{Type{"data_file_parsed", "data_file_parsed"}, nil}, nil
+	case name.Data != "":
+		swapKeyOut()
+		// Formulate tx
+		log.WithFields(log.Fields{
+			"name":   name.Name,
+			"data":   name.Data,
+			"amount": name.Amount,
+		}).Info("NameReg Transaction")
+
+		tx, err := rpc.Name(jobs.NodeClient, jobs.KeyClient, jobs.PublicKey, name.Source, name.Amount, name.Nonce, name.Fee, name.Name, name.Data)
+		if err != nil {
+			return MintChainErrorHandler(jobs, err)
+		}
+		// Sign, broadcast, display
+
+		res, err := txFinalize(tx, jobs)
+		swapKeyIn()
+		return res, err
+	default:
+		return nil, fmt.Errorf("Missing required fields. Please fill data or datafile field.")
+	}
+
+}
+
 type Permission struct {
 	// (Optional, if account job or global account set) address of the account from which to send (the
 	// public key for the account must be available to eris-keys)
@@ -145,6 +282,45 @@ func (perm *Permission) PreProcess(jobs *Jobs) (err error) {
 	// Set defaults
 	perm.Source = useDefault(perm.Source, jobs.Account)
 	return nil
+}
+
+func (perm *Permission) Execute(jobs *Jobs) (*JobResults, error) {
+	// Populate the transaction appropriately
+	var args []string
+	switch perm.Action {
+	case "set_global":
+		args = []string{perm.PermissionFlag, perm.Value}
+	case "set_base":
+		args = []string{perm.Target, perm.PermissionFlag, perm.Value}
+	case "unset_base":
+		args = []string{perm.Target, perm.PermissionFlag}
+	case "add_role", "rm_role":
+		args = []string{perm.Target, perm.Role}
+	}
+
+	// Don't use pubKey if account override
+	var oldKey string
+	if perm.Source != jobs.Account {
+		oldKey = jobs.PublicKey
+		jobs.PublicKey = ""
+	}
+
+	// Formulate tx
+	arg := fmt.Sprintf("%s:%s", args[0], args[1])
+	log.WithField(perm.Action, arg).Info("Setting Permissions")
+
+	tx, err := rpc.Permissions(jobs.NodeClient, jobs.KeyClient, jobs.PublicKey, perm.Source, perm.Nonce, perm.Action, args)
+	if err != nil {
+		return MintChainErrorHandler(jobs, err)
+	}
+
+	// Don't use pubKey if account override
+	if perm.Source != jobs.Account {
+		jobs.PublicKey = oldKey
+	}
+
+	// Sign, broadcast, display
+	return txFinalize(tx, jobs)
 }
 
 type Bond struct {
