@@ -1,6 +1,7 @@
 package jobs
 
 import (
+	"encoding/hex"
 	"strings"
 
 	"github.com/eris-ltd/eris/log"
@@ -29,10 +30,21 @@ func (account *Account) PreProcess(jobs *Jobs) (err error) {
 	return nil
 }
 
-func (Account *Account) Execute(jobs *Jobs) (*JobResults, error) {
-	log.WithField("=>", Account.Address).Debug("Establishing Account")
+func (account *Account) Execute(jobs *Jobs) (*JobResults, error) {
+	log.WithField("=>", account.Address).Debug("Establishing Account")
+	jobs.Account = account.Address
+	// Set the public key from eris-keys
+	addr, err := hex.DecodeString(jobs.Account)
+	if err != nil {
+		return nil, err
+	}
+	pubkey, err := jobs.KeyClient.PublicKey(addr)
+	if err != nil {
+		return KeysErrorHandler(jobs, err)
+	}
+	jobs.PublicKey = hex.EncodeToString(pubkey)
 	return &JobResults{
-		FullResult:   Type{Account.Address, Account.Address},
+		FullResult:   Type{account.Address, account.Address},
 		NamedResults: nil,
 	}, nil
 }

@@ -79,13 +79,13 @@ test_setup(){
 
   # make a chain
   eris clean -y
-  eris chains make --account-types=Full:1,Participant:1 $chain_name #1>/dev/null
+  eris chains make --account-types=Full:1,Participant:1 $chain_name 
   key1_addr=$(cat $chain_dir/addresses.csv | grep $name_full | cut -d ',' -f 1)
   key2_addr=$(cat $chain_dir/addresses.csv | grep $name_part | cut -d ',' -f 1)
   key2_pub=$(cat $chain_dir/accounts.csv | grep $name_part | cut -d ',' -f 1)
   echo -e "Default Key =>\t\t\t\t$key1_addr"
   echo -e "Backup Key =>\t\t\t\t$key2_addr"
-  eris chains start $chain_name --init-dir $chain_dir/$name_full 1>/dev/null
+  eris chains start $chain_name --init-dir $chain_dir/$name_full
   sleep 5 # boot time
   chain_ip=$(eris chains inspect $chain_name NetworkSettings.IPAddress)
   keys_ip=$(eris services inspect keys NetworkSettings.IPAddress)
@@ -104,12 +104,12 @@ run_test(){
   echo -e "Testing eris jobs using fixture =>\t$1"
   goto_base
   cd $1
-  if [ "$ci" = false ]
+  if [ -z "$ci" ]
   then
     echo
     cat readme.md
     echo
-    eris pkgs do --chain "$chain_name" --address "$key1_addr" --set "addr1=$key1_addr" --set "addr2=$key2_addr" --set "addr2_pub=$key2_pub" #--debug
+    eris pkgs do --chain "$chain_name" --address "$key1_addr" --set "addr1=$key1_addr" --set "addr2=$key2_addr" --set "addr2_pub=$key2_pub" -d
   else
     echo
     cat readme.md

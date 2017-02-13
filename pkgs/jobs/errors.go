@@ -2,9 +2,8 @@ package jobs
 
 import (
 	"fmt"
-	//"regexp"
+	"regexp"
 
-	//"github.com/eris-ltd/eris/definitions"
 	"github.com/eris-ltd/eris/log"
 )
 
@@ -30,14 +29,14 @@ Debugging this error is tricky, but don't worry the marmot recovery checklist is
 `, err, jobs.Account, jobs.ChainID, jobs.ChainID)
 }
 
-/*func KeysErrorHandler(do *definitions.Do, err error) (string, error) {
+func KeysErrorHandler(jobs *Jobs, err error) (*JobResults, error) {
 	log.WithFields(log.Fields{
-		"defAddr": do.Package.Account,
+		"defAddr": jobs.Account,
 	}).Error("")
 
-	r := regexp.MustCompile(fmt.Sprintf("open /home/eris/.eris/keys/data/%s/%s: no such file or directory", do.Package.Account, do.Package.Account))
+	r := regexp.MustCompile(fmt.Sprintf("open /home/eris/.eris/keys/data/%s/%s: no such file or directory", jobs.Account, jobs.Account))
 	if r.MatchString(fmt.Sprintf("%v", err)) {
-		return "", fmt.Errorf(`
+		return nil, fmt.Errorf(`
 Unfortunately the marmots could not find the key you are trying to use in the keys service.
 
 There are two ways to fix this.
@@ -53,10 +52,10 @@ then change the account. Once you have verified that the keys for account
 %s
 
 are in the keys service, then rerun me.
-`, do.Package.Account, do.ChainID, do.ChainID, do.Package.Account)
+`, jobs.Account, jobs.ChainID, jobs.ChainID, jobs.Account)
 	}
 
-	return "", fmt.Errorf(`
+	return nil, fmt.Errorf(`
 There has been an error talking to your eris keys service.
 
 %v
@@ -64,10 +63,10 @@ There has been an error talking to your eris keys service.
 Debugging this error is tricky, but don't worry the marmot recovery checklist is...
   * is your %s account right?
   * is the key for %s in your keys service: eris keys ls ?
-`, err, do.Package.Account, do.Package.Account)
+`, err, jobs.Account, jobs.Account)
 }
 
-func ABIErrorHandler(do *definitions.Do, err error, call *definitions.Call, query *definitions.QueryContract) (string, error) {
+/*func ABIErrorHandler(do *definitions.Do, err error, call *definitions.Call, query *definitions.QueryContract) (string, error) {
 	switch {
 	case call != nil:
 		log.WithFields(log.Fields{
