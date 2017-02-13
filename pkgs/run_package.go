@@ -2,6 +2,7 @@ package pkgs
 
 import (
 	"fmt"
+	"runtime"
 
 	"github.com/eris-ltd/eris/definitions"
 	"github.com/eris-ltd/eris/loaders"
