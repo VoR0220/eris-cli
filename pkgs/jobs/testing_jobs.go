@@ -95,12 +95,13 @@ func (qAccount *QueryAccount) Execute(jobs *Jobs) (*JobResults, error) {
 		switch {
 		case strings.Contains(qAccount.Field, "permissions"):
 			permissions := strings.Split(qAccount.Field, ".")
-			if len(permissions) > 1 {
+			if len(permissions) > 2 {
 				return nil, invalidAccount
 			}
 			switch permissions[1] {
 			case "roles":
-				result = Type{strings.Join(r.Permissions.Roles, ","), r.Permissions.Roles}
+				//[rj] the second field is cheating...for now...need to update asseerts to handle arrays of strings, or create a helper to turn this into an interface
+				result = Type{strings.Join(r.Permissions.Roles, ","), strings.Join(r.Permissions.Roles, ",")}
 			case "base", "perms":
 				result = Type{strconv.Itoa(int(r.Permissions.Base.Perms)), r.Permissions.Base.Perms}
 			case "set":
@@ -248,11 +249,9 @@ func (assert *Assert) PreProcess(jobs *Jobs) (err error) {
 	if assert.Key, err = preProcessInterface(assert.Key, jobs); err != nil {
 		return fmt.Errorf("Assertion Failed!: %v", err)
 	}
-	log.Warn(assert.Key)
 	if assert.Relation, _, err = preProcessString(assert.Relation, jobs); err != nil {
 		return fmt.Errorf("Assertion Failed!: %v", err)
 	}
-	log.Warn(assert.Relation)
 	if assert.Value, err = preProcessInterface(assert.Value, jobs); err != nil {
 		return fmt.Errorf("Assertion Failed!: %v", err)
 	}
@@ -278,7 +277,7 @@ func (assert *Assert) PreProcess(jobs *Jobs) (err error) {
 			if err != nil {
 				return err
 			}
-		case int:
+		case int, int64, uint, uint64:
 			break
 		}
 
@@ -290,7 +289,7 @@ func (assert *Assert) PreProcess(jobs *Jobs) (err error) {
 			if err != nil {
 				return err
 			}
-		case int:
+		case int, int64, uint, uint64:
 			break
 		}
 
@@ -391,12 +390,14 @@ func (assert *Assert) Execute(jobs *Jobs) (*JobResults, error) {
 	fail := func() (*JobResults, error) {
 		return &JobResults{}, fmt.Errorf("Assertion Failed!")
 	}
-	isOrderedInt := func(i interface{}) bool {
+	isOrderedInt := func(i interface{}) (int, bool) {
 		switch i.(type) {
 		case int:
-			return true
+			return i.(int), true
+		case int64:
+			return int(i.(int64)), true
 		default:
-			return false
+			return 0, false
 		}
 	}
 	// Switch on relation
@@ -406,9 +407,9 @@ func (assert *Assert) Execute(jobs *Jobs) (*JobResults, error) {
 	typeVal := assert.Value.(Type).ActualResult
 
 	log.WithFields(log.Fields{
-		"key":      assert.Key.(Type),
+		"key":      stringKey,
 		"relation": assert.Relation,
-		"value":    assert.Value.(Type),
+		"value":    stringVal,
 	}).Error("Assertion =>")
 
 	keyVal := reflect.ValueOf(typeKey)
@@ -445,39 +446,45 @@ func (assert *Assert) Execute(jobs *Jobs) (*JobResults, error) {
 				return fail()
 			}
 		}
-	case ">", "gt":
-		if stringKey > stringVal || typeKey.(int) > typeVal.(int) {
-			return pass()
-		} else {
-			return fail()
-		}
-	case ">=", "ge":
-		if isOrderedInt(typeKey) {
-			typeKey = typeKey.(int)
+
+	case ">=", "ge", ">", "gt", "<", "lt", "<=", "le":
+		if newTypeKey, ok := isOrderedInt(typeKey); ok {
+			typeKey = newTypeKey
 		} else {
 			typeKey = typeKey.(string)
 		}
-		if isOrderedInt(typeVal) {
-			typeVal = typeVal.(int)
+		if newTypeVal, ok := isOrderedInt(typeKey); ok {
+			typeVal = newTypeVal
 		} else {
 			typeVal = typeVal.(string)
 		}
-		if stringKey >= stringVal || typeKey.(int) >= typeVal.(int) {
-			return pass()
-		} else {
-			return fail()
-		}
-	case "<", "lt":
-		if stringKey < stringVal || typeKey.(int) < typeVal.(int) {
-			return pass()
-		} else {
-			return fail()
-		}
-	case "<=", "le":
-		if stringKey == stringVal || typeKey.(int) == typeVal.(int) {
-			return pass()
-		} else {
-			return fail()
+		switch assert.Relation {
+		case ">=", "ge":
+			if stringKey >= stringVal || typeKey.(int) >= typeVal.(int) {
+				return pass()
+			} else {
+				return fail()
+			}
+		case "<", "lt":
+			if stringKey < stringVal || typeKey.(int) < typeVal.(int) {
+				return pass()
+			} else {
+				return fail()
+			}
+		case "<=", "le":
+			if stringKey == stringVal || typeKey.(int) == typeVal.(int) {
+				return pass()
+			} else {
+				return fail()
+			}
+		case ">", "gt":
+			if stringKey > stringVal || typeKey.(int) > typeVal.(int) {
+				return pass()
+			} else {
+				return fail()
+			}
+		default:
+			return &JobResults{}, fmt.Errorf("The marmots are very confused as to how you got here.")
 		}
 	default:
 		return &JobResults{}, fmt.Errorf("Improper relation detected.")

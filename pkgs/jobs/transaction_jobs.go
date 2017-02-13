@@ -45,6 +45,7 @@ func (send *Send) PreProcess(jobs *Jobs) (err error) {
 	if err != nil {
 		return err
 	}
+	log.Debug("Default job account: ", jobs.Account)
 	send.Source = useDefault(send.Source, jobs.Account)
 	send.Amount = useDefault(send.Amount, jobs.DefaultAmount)
 	return nil
