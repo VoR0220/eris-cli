@@ -40,11 +40,7 @@ var (
 	KeysContainerPath = path.Join(ErisContainerRoot, "keys", "data")
 
 	// Scratch directories.
-	DataContainersPath   = filepath.Join(ScratchPath, "data")
-	LanguagesScratchPath = filepath.Join(ScratchPath, "languages")
-	LllcScratchPath      = filepath.Join(LanguagesScratchPath, "lllc")
-	SolcScratchPath      = filepath.Join(LanguagesScratchPath, "sol")
-	SerpScratchPath      = filepath.Join(LanguagesScratchPath, "ser")
+	DataContainersPath = filepath.Join(ScratchPath, "data")
 )
 
 // DirsToMigrate is used by the `eris init` command to check
@@ -92,7 +88,6 @@ func ChangeErisRoot(erisDir string) {
 
 	// Scratch Directories (basically eris' cache) (globally coordinated)
 	DataContainersPath = filepath.Join(ScratchPath, "data")
-	LanguagesScratchPath = filepath.Join(ScratchPath, "languages") // previously "~/.eris/languages"
 }
 
 func AbsolutePath(Datadir string, filename string) string {
@@ -147,10 +142,6 @@ func InitErisDir() (err error) {
 		RemotesPath,
 		ScratchPath,
 		DataContainersPath,
-		LanguagesScratchPath,
-		LllcScratchPath,
-		SolcScratchPath,
-		SerpScratchPath,
 		ServicesPath,
 	} {
 		err := InitDataDir(d)

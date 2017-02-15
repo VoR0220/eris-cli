@@ -55,7 +55,6 @@ func addPackagesFlags() {
 	packagesDo.Flags().StringVarP(&do.DefaultFee, "fee", "n", "9999", "default fee to use")
 	packagesDo.Flags().StringVarP(&do.DefaultAmount, "amount", "u", "9999", "default amount to use")
 	packagesDo.Flags().BoolVarP(&do.Overwrite, "overwrite", "t", true, "overwrite jobs of the same name")
-	packagesDo.Flags().BoolVarP(&do.RemoteCompiler, "remote-compiler", "r", false, "use a remote compiler; if set uses the url specified with the compiler flag.")
 }
 
 func PackagesDo(cmd *cobra.Command, args []string) {
@@ -73,14 +72,6 @@ func PackagesDo(cmd *cobra.Command, args []string) {
 	}
 
 	util.IfExit(pkgs.RunPackage(do))
-}
-
-func formCompilers() string {
-	verSplit := strings.Split(version.VERSION, ".")
-	maj, _ := strconv.Atoi(verSplit[0])
-	min, _ := strconv.Atoi(verSplit[1])
-	pat, _ := strconv.Atoi(verSplit[2])
-	return fmt.Sprintf("https://compilers.monax.io:1%01d%02d%01d", maj, min, pat)
 }
 
 func defaultSigner() string {

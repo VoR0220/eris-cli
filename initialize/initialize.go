@@ -127,18 +127,18 @@ func pullDefaultImages(images []string) error {
 			"keys",
 			"ipfs",
 			"db",
-			"compilers",
+			"solc",
 		}
 	}
 
 	// Rewrite with versioned image names (full names
 	// without a registry prefix).
 	versionedImageNames := map[string]string{
-		"data":      config.Global.ImageData,
-		"keys":      config.Global.ImageKeys,
-		"ipfs":      config.Global.ImageIPFS,
-		"db":        config.Global.ImageDB,
-		"compilers": config.Global.ImageCompilers,
+		"data": config.Global.ImageData,
+		"keys": config.Global.ImageKeys,
+		"ipfs": config.Global.ImageIPFS,
+		"db":   config.Global.ImageDB,
+		"solc": config.Global.ImageSolc,
 	}
 
 	for i, image := range images {

@@ -13,10 +13,11 @@ const tomlHeader = `# This is a TOML config file.
 # For more information, see https://github.com/toml-lang/toml
 `
 
+// ------------------ compilers -----------------
+
 // ------------------ services ------------------
 
 var ServiceDefinitions = []string{
-	"compilers",
 	"ipfs",
 	"keys",
 	// used by [eris chains start myChain --logrotate]
@@ -145,17 +146,6 @@ This service is usually linked to a chain and/or an application. Its functionali
 		serviceDefinition.Service.AutoData = true
 		serviceDefinition.Service.Ports = []string{`"4767:4767"`} // XXX these exposed ports are a gaping security flaw
 		serviceDefinition.Service.ExecHost = "ERIS_KEYS_HOST"
-
-	case "compilers":
-
-		serviceDefinition.Name = "compilers"
-		serviceDefinition.Description = `Monax's Solidity Compiler Server.
-
-This eris service compiles smart contract languages.`
-		serviceDefinition.Status = "beta"
-		serviceDefinition.Service.Image = path.Join(version.DefaultRegistry, version.ImageCompilers)
-		serviceDefinition.Service.AutoData = true
-		//serviceDefinition.Service.Ports = []string{`"9090:9090"`}
 
 	case "ipfs":
 

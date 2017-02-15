@@ -32,8 +32,6 @@ type Config struct {
 type Settings struct {
 	IpfsHost          string `json:"IpfsHost,omitempty" yaml:"IpfsHost,omitempty" toml:"IpfsHost,omitempty"`
 	IpfsPort          string `json:"IpfsPort,omitempty" yaml:"IpfsPort,omitempty" toml:"IpfsPort,omitempty"`
-	CompilersHost     string `json:"CompilersHost,omitempty" yaml:"CompilersHost,omitempty" toml:"CompilersHost,omitempty"` // currently unused
-	CompilersPort     string `json:"CompilersPort,omitempty" yaml:"CompilersPort,omitempty" toml:"CompilersPort,omitempty"` // currently unused
 	DockerHost        string `json:"DockerHost,omitempty" yaml:"DockerHost,omitempty" toml:"DockerHost,omitempty"`
 	DockerCertPath    string `json:"DockerCertPath,omitempty" yaml:"DockerCertPath,omitempty" toml:"DockerCertPath,omitempty"`
 	CrashReport       string `json:"CrashReport,omitempty" yaml:"CrashReport,omitempty" toml:"CrashReport,omitempty"`
@@ -44,11 +42,11 @@ type Settings struct {
 	DefaultRegistry string `json:"DefaultRegistry,omitempty" yaml:"DefaultRegistry,omitempty" toml:"DefaultRegistry,omitempty"`
 	BackupRegistry  string `json:"BackupRegistry,omitempty" yaml:"BackupRegistry,omitempty" toml:"BackupRegistry,omitempty"`
 
-	ImageData      string `json:"ImageData,omitempty" yaml:"ImageData,omitempty" toml:"ImageData,omitempty"`
-	ImageKeys      string `json:"ImageKeys,omitempty" yaml:"ImageKeys,omitempty" toml:"ImageKeys,omitempty"`
-	ImageDB        string `json:"ImageDB,omitempty" yaml:"ImageDB,omitempty" toml:"ImageDB,omitempty"`
-	ImageIPFS      string `json:"ImageIPFS,omitempty" yaml:"ImageIPFS,omitempty" toml:"ImageIPFS,omitempty"`
-	ImageCompilers string `json:"ImageCompilers,omitempty" yaml:"ImageCompilers,omitempty" toml:"ImageCompilers,omitempty"`
+	ImageData string `json:"ImageData,omitempty" yaml:"ImageData,omitempty" toml:"ImageData,omitempty"`
+	ImageKeys string `json:"ImageKeys,omitempty" yaml:"ImageKeys,omitempty" toml:"ImageKeys,omitempty"`
+	ImageDB   string `json:"ImageDB,omitempty" yaml:"ImageDB,omitempty" toml:"ImageDB,omitempty"`
+	ImageIPFS string `json:"ImageIPFS,omitempty" yaml:"ImageIPFS,omitempty" toml:"ImageIPFS,omitempty"`
+	ImageSolc string `json:"ImageSolc,omitempty" yaml:"ImageSolc,omitempty" toml:"ImageSolc,omitempty"`
 }
 
 // New initializes the global configuration with default settings
@@ -127,10 +125,6 @@ func SetDefaults() (*viper.Viper, error) {
 	config.SetDefault("CrashReport", "bugsnag")
 	config.SetDefault("ImagesPullTimeout", "15m")
 
-	// Compiler defaults.
-	config.SetDefault("CompilersHost", "https://compilers.monax.io")
-	config.SetDefault("CompilersPort", "1"+strings.Replace(strings.Split(version.VERSION, "-")[0], ".", "", -1))
-
 	// Image defaults.
 	config.SetDefault("DefaultRegistry", version.DefaultRegistry)
 	config.SetDefault("BackupRegistry", version.BackupRegistry)
@@ -138,7 +132,7 @@ func SetDefaults() (*viper.Viper, error) {
 	config.SetDefault("ImageKeys", version.ImageKeys)
 	config.SetDefault("ImageDB", version.ImageDB)
 	config.SetDefault("ImageIPFS", version.ImageIPFS)
-	config.SetDefault("ImageCompilers", version.ImageCompilers)
+	config.SetDefault("ImageSolc", version.ImageSolc)
 
 	return config, nil
 }
