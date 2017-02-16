@@ -2,8 +2,7 @@ package commands
 
 import (
 	"github.com/spf13/cobra"
-
-	"github.com/eris-ltd/eris/compilers"
+	//"github.com/eris-ltd/eris/compilers"
 )
 
 var Compilers = &cobra.Command{
@@ -50,7 +49,7 @@ var compilersRun = &cobra.Command{
 	Use:   "compile",
 	Short: "compiles a string of files",
 	Long:  "Maps to an exec statement, all of these commands are hand coded.",
-	Run:   CompileCompiler,
+	//Run:   CompileCompiler,
 }
 
 func CheckoutCompiler(cmd *cobra.Command, args []string) {

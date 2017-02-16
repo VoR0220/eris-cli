@@ -5,8 +5,6 @@ import (
 
 	"github.com/eris-ltd/eris/definitions"
 	"github.com/eris-ltd/eris/loaders"
-	"github.com/eris-ltd/eris/pkgs/jobs"
-	"github.com/eris-ltd/eris/services"
 	"github.com/eris-ltd/eris/util"
 )
 

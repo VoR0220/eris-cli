@@ -58,7 +58,6 @@ func (s *SolcTemplate) Compile(files []string, version string) (Return, error) {
 	solcExecute := []string{"solc"}
 	solReturn := &SolcReturn{}
 	var warning string
-	var binFiles map[string]*SolcItems
 	var solFiles []string
 	//get docker repo
 	//append tag
@@ -70,10 +69,10 @@ func (s *SolcTemplate) Compile(files []string, version string) (Return, error) {
 		ext := path.Ext(file)
 		switch ext {
 		case ".sol":
-			solFiles := append(solFiles, file)
+			solFiles = append(solFiles, file)
 		case ".bin":
 			binCommand := []string{"cat", file, "|", "solc", "--link", "--libraries", strings.Join(s.Libraries, ",")}
-			output, err := executeCompilerCommand("ethereum/solc:stable", strings.Join(binCommand, ""))
+			output, err := executeCompilerCommand("ethereum/solc:stable", binCommand)
 			if err != nil {
 				return Return{}, err
 			}
@@ -108,11 +107,13 @@ func (s *SolcTemplate) Compile(files []string, version string) (Return, error) {
 		}
 	}
 	solcExecute = append(solcExecute, solFiles...)
-	finalCommand := strings.Join(solcExecute, " ")
 	//Execute command
-	output, err := executeCompilerCommand("ethereum/solc:stable", finalCommand)
+	output, err := executeCompilerCommand("ethereum/solc:stable", solcExecute)
 	//Parse output into a return
-
+	if err != nil {
+		log.Info(err)
+		return Return{&SolcReturn{Error: err}}, nil
+	}
 	trimmedOutput := strings.TrimSpace(string(output))
 	jsonBeginsCertainly := strings.Index(trimmedOutput, `{"contracts":`)
 
@@ -121,10 +122,12 @@ func (s *SolcTemplate) Compile(files []string, version string) (Return, error) {
 		trimmedOutput = trimmedOutput[jsonBeginsCertainly:]
 	}
 
-	log.WithField("Json: ", output).Debug("Command Output")
+	log.WithField("Json: ", string(output)).Info("Command Output")
 	if err = json.Unmarshal([]byte(trimmedOutput), solReturn); err != nil {
 		return Return{}, err
 	}
+
+	solReturn.Warning = warning
 
 	return Return{solReturn}, nil
 }

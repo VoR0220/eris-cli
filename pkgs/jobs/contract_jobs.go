@@ -39,12 +39,13 @@ func (compile *Compile) PreProcess(jobs *Jobs) (err error) {
 		}
 	}
 
-	switch {
+	/*switch {
 	case compile.Solc != compilers.SolcTemplate{}:
 		compile.Compiler = compile.Solc
 	default:
 		return fmt.Errorf("Could not find compiler to use")
-	}
+	}*/
+	return nil
 }
 
 type Deploy struct {

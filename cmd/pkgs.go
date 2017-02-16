@@ -6,12 +6,9 @@ import (
 	"fmt"
 	"os"
 	"runtime"
-	"strconv"
-	"strings"
 
 	"github.com/eris-ltd/eris/pkgs"
 	"github.com/eris-ltd/eris/util"
-	"github.com/eris-ltd/eris/version"
 
 	"github.com/spf13/cobra"
 )
