@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"os/exec"
 
 	"github.com/eris-ltd/eris/log"
 	"github.com/eris-ltd/eris/util"
@@ -45,10 +46,11 @@ func executeCompilerCommand(image string, command []string) ([]byte, error) {
 			AttachStdout:    true,
 			AttachStderr:    true,
 			AttachStdin:     true,
+			WorkingDir:      "/home/",
 			Tty:             true,
 			NetworkDisabled: false,
-			Mounts:          []docker.Mount{docker.Mount{Source: pwd, Destination: "$HOME"}},
-			Cmd:             command,
+			Mounts:          []docker.Mount{docker.Mount{Source: pwd, Destination: "/home/"}},
+			Cmd:             []string{"ls"},
 		},
 		HostConfig: &docker.HostConfig{},
 	}
@@ -70,6 +72,13 @@ func executeCompilerCommand(image string, command []string) ([]byte, error) {
 	if err = util.DockerError(util.DockerClient.StartContainer(opts.Name, opts.HostConfig)); err != nil {
 		return nil, err
 	}
+
+	cmd := exec.Command("ls")
+	out, err := cmd.Output()
+	if err != nil {
+		return nil, err
+	}
+	log.Warn(string(out))
 
 	log.WithField("=>", opts.Name).Info("Waiting for data container to exit")
 	if exitCode, err := util.DockerClient.WaitContainer(container.ID); err != nil {

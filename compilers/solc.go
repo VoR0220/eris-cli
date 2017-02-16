@@ -108,11 +108,12 @@ func (s *SolcTemplate) Compile(files []string, version string) (Return, error) {
 	}
 	solcExecute = append(solcExecute, solFiles...)
 	//Execute command
+	log.Warn(solcExecute)
 	output, err := executeCompilerCommand("ethereum/solc:stable", solcExecute)
 	//Parse output into a return
 	if err != nil {
 		log.Info(err)
-		return Return{&SolcReturn{Error: err}}, nil
+		return Return{}, err
 	}
 	trimmedOutput := strings.TrimSpace(string(output))
 	jsonBeginsCertainly := strings.Index(trimmedOutput, `{"contracts":`)
