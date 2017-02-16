@@ -1,11 +1,14 @@
 package compilers
 
 import (
+	"encoding/json"
+	"fmt"
 	"path"
 	"strconv"
 	"strings"
 
-	"github.com/eris-ltd/eris/util"
+	"github.com/eris-ltd/eris/log"
+	//"github.com/eris-ltd/eris/util"
 )
 
 //The following represents solidity outputs
@@ -70,13 +73,13 @@ func (s *SolcTemplate) Compile(files []string, version string) (Return, error) {
 			solFiles := append(solFiles, file)
 		case ".bin":
 			binCommand := []string{"cat", file, "|", "solc", "--link", "--libraries", strings.Join(s.Libraries, ",")}
-			output, err := executeCompilerCommand()
+			output, err := executeCompilerCommand("ethereum/solc:stable", strings.Join(binCommand, ""))
 			if err != nil {
-				return nil, err
+				return Return{}, err
 			}
 			solReturn.Contracts[strings.TrimRight(file, ext)] = &SolcItems{Bin: strings.TrimSpace(string(output))}
 		default:
-			return nil, fmt.Errorf("Unexpected file extension found during compilation for solc: %v", file)
+			return Return{}, fmt.Errorf("Unexpected file extension found during compilation for solc: %v", file)
 		}
 	}
 
@@ -107,7 +110,7 @@ func (s *SolcTemplate) Compile(files []string, version string) (Return, error) {
 	solcExecute = append(solcExecute, solFiles...)
 	finalCommand := strings.Join(solcExecute, " ")
 	//Execute command
-	output, err := executeCompilerCommand()
+	output, err := executeCompilerCommand("ethereum/solc:stable", finalCommand)
 	//Parse output into a return
 
 	trimmedOutput := strings.TrimSpace(string(output))
@@ -120,7 +123,7 @@ func (s *SolcTemplate) Compile(files []string, version string) (Return, error) {
 
 	log.WithField("Json: ", output).Debug("Command Output")
 	if err = json.Unmarshal([]byte(trimmedOutput), solReturn); err != nil {
-		return nil, err
+		return Return{}, err
 	}
 
 	return Return{solReturn}, nil

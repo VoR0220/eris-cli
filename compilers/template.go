@@ -6,7 +6,7 @@ type Compiler interface {
 
 //Practicing inheritance, this struct gives us access to all types of returns
 type Return struct {
-	SolcReturn
+	*SolcReturn
 	//Enter your return struct here...
 }
 
