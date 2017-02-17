@@ -36,7 +36,7 @@ func executeCompilerCommand(image string, command []string) ([]byte, error) {
 	}
 	//create container with volumes premounted
 	opts := docker.CreateContainerOptions{
-		Name: util.UniqueName("compiler-" + image),
+		Name: util.UniqueName("compiler"),
 		Config: &docker.Config{
 			Image:           image,
 			User:            "root",
@@ -106,8 +106,10 @@ func executeCompilerCommand(image string, command []string) ([]byte, error) {
 
 	// Return the logs as a byte slice, if possible.
 	if stdout.Len() != 0 {
+		log.Warn("Hit normal output")
 		return stdout.Bytes(), nil
 	} else if stderr.Len() != 0 {
+		log.Warn("Hit stderr")
 		return stderr.Bytes(), fmt.Errorf("Compiler error.")
 	} else {
 		return nil, nil

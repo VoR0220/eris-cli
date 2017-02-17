@@ -2,6 +2,7 @@ package compilers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"path"
 	"strconv"
@@ -57,7 +58,6 @@ type SolcTemplate struct {
 func (s *SolcTemplate) Compile(files []string, version string) (Return, error) {
 	solcExecute := []string{"solc"}
 	solReturn := &SolcReturn{}
-	var warning string
 	var solFiles []string
 	//get docker repo
 	//append tag
@@ -112,14 +112,17 @@ func (s *SolcTemplate) Compile(files []string, version string) (Return, error) {
 	output, err := executeCompilerCommand("ethereum/solc:stable", solcExecute)
 	//Parse output into a return
 	if err != nil {
-		log.Info(err)
-		return Return{}, err
+		if err.Error() != "Compiler error." {
+			return Return{}, err
+		}
+		solReturn.Error = errors.New(strings.TrimSpace(string(output)))
+		return Return{solReturn}, nil
 	}
 	trimmedOutput := strings.TrimSpace(string(output))
 	jsonBeginsCertainly := strings.Index(trimmedOutput, `{"contracts":`)
 
 	if jsonBeginsCertainly > 0 {
-		warning = trimmedOutput[:jsonBeginsCertainly]
+		solReturn.Warning = trimmedOutput[:jsonBeginsCertainly]
 		trimmedOutput = trimmedOutput[jsonBeginsCertainly:]
 	}
 
@@ -127,8 +130,6 @@ func (s *SolcTemplate) Compile(files []string, version string) (Return, error) {
 	if err = json.Unmarshal([]byte(trimmedOutput), solReturn); err != nil {
 		return Return{}, err
 	}
-
-	solReturn.Warning = warning
 
 	return Return{solReturn}, nil
 }

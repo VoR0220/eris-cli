@@ -15,7 +15,7 @@ func TestMain(m *testing.M) {
 	os.Exit(exitCode)
 }
 
-func TestCompilerNormal(t *testing.T) {
+func TestSolcCompilerNormal(t *testing.T) {
 
 	var solFile string = `pragma solidity >= 0.0.0;
 	contract main {
@@ -39,13 +39,62 @@ func TestCompilerNormal(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	t.Log("Contracts: ", solReturn.Contracts)
-	t.Log("Warning: ", solReturn.Warning)
-	t.Log("Error: ", solReturn.Error)
+	if solReturn.Error != nil || solReturn.Warning != "" || len(solReturn.Contracts) != 1 {
+		t.Fatalf("Expected no errors or warnings and expected contract items. Got %v for errors, %v for warnings, and %v for contract items", solReturn.Error, solReturn.Warning, solReturn.Contracts)
+	}
 }
 
-func TestCompilerError(t *testing.T) {
+func TestSolcCompilerError(t *testing.T) {
+	var solFile string = `pragma solidity >= 0.0.0;
+	contract main {
+		uint a;
+		function f() {
+			a = 1;
+		}
+	`
+	file, err := os.Create("faultyContract.sol")
+	defer os.Remove("faultyContract.sol")
+	if err != nil {
+		t.Fatal(err)
+	}
+	file.WriteString(solFile)
+	template := &SolcTemplate{
+		CombinedOutput: []string{"bin", "abi"},
+	}
 
+	solReturn, err := template.Compile([]string{"faultyContract.sol"}, "stable")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if solReturn.Error == nil {
+		t.Fatal("Expected an error, got nil.")
+	}
+}
+
+func TestSolcCompilerWarning(t *testing.T) {
+	var solFile string = `contract main {
+		uint a;
+		function f() {
+			a = 1;
+		}
+	}`
+	file, err := os.Create("simpleContract.sol")
+	defer os.Remove("simpleContract.sol")
+	if err != nil {
+		t.Fatal(err)
+	}
+	file.WriteString(solFile)
+	template := &SolcTemplate{
+		CombinedOutput: []string{"bin", "abi"},
+	}
+
+	solReturn, err := template.Compile([]string{"simpleContract.sol"}, "stable")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if solReturn.Warning == "" {
+		t.Fatal("Expected a warning.")
+	}
 }
 
 func TestDefaultCompilerUnmarshalling(t *testing.T) {
