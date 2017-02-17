@@ -50,7 +50,7 @@ func executeCompilerCommand(image string, command []string) ([]byte, error) {
 			Tty:             true,
 			NetworkDisabled: false,
 			Mounts:          []docker.Mount{docker.Mount{Source: pwd, Destination: "/home/"}},
-			Cmd:             []string{"ls"},
+			Cmd:             []string{"ls", "-a"},
 		},
 		HostConfig: &docker.HostConfig{},
 	}
