@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"os"
-	"os/exec"
 
 	"github.com/eris-ltd/eris/log"
 	"github.com/eris-ltd/eris/util"
@@ -35,24 +34,23 @@ func executeCompilerCommand(image string, command []string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Warn("PWD: ", pwd)
-	//return exec.Command("docker", "run", "-v", pwd+":/toCompile", "-w", "/toCompile", "--rm", image, command).Output()
-	//create volume
+	//create container with volumes premounted
 	opts := docker.CreateContainerOptions{
-		Name: util.UniqueName("compiler"),
+		Name: util.UniqueName("compiler-" + image),
 		Config: &docker.Config{
 			Image:           image,
 			User:            "root",
 			AttachStdout:    true,
 			AttachStderr:    true,
 			AttachStdin:     true,
-			WorkingDir:      "/home/",
 			Tty:             true,
 			NetworkDisabled: false,
-			Mounts:          []docker.Mount{docker.Mount{Source: pwd, Destination: "/home/"}},
-			Cmd:             []string{"ls", "-a"},
+			WorkingDir:      "/home/",
+			Cmd:             command,
 		},
-		HostConfig: &docker.HostConfig{},
+		HostConfig: &docker.HostConfig{
+			Binds: []string{pwd + ":" + "/home/"},
+		},
 	}
 	if err != nil {
 		return nil, util.DockerError(err)
@@ -72,13 +70,6 @@ func executeCompilerCommand(image string, command []string) ([]byte, error) {
 	if err = util.DockerError(util.DockerClient.StartContainer(opts.Name, opts.HostConfig)); err != nil {
 		return nil, err
 	}
-
-	cmd := exec.Command("ls")
-	out, err := cmd.Output()
-	if err != nil {
-		return nil, err
-	}
-	log.Warn(string(out))
 
 	log.WithField("=>", opts.Name).Info("Waiting for data container to exit")
 	if exitCode, err := util.DockerClient.WaitContainer(container.ID); err != nil {
@@ -115,11 +106,9 @@ func executeCompilerCommand(image string, command []string) ([]byte, error) {
 
 	// Return the logs as a byte slice, if possible.
 	if stdout.Len() != 0 {
-		log.Warn("Hit normal output")
 		return stdout.Bytes(), nil
 	} else if stderr.Len() != 0 {
-		log.Warn("Hit stderr")
-		return stderr.Bytes(), nil
+		return stderr.Bytes(), fmt.Errorf("Compiler error.")
 	} else {
 		return nil, nil
 	}
