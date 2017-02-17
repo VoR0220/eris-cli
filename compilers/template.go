@@ -20,3 +20,13 @@ type CompilerDetails struct {
 	DockerRepo        string   `toml:"docker_repo"`
 	VersionsAvailable []string `toml:"versions_available"`
 }
+
+type CompilerExecutionDetails struct {
+	Command         []string
+	Image           string
+	Tag             string
+	SourceDir       string
+	DestDir         string
+	RemoveContainer bool
+	RemoveVolume    bool
+}

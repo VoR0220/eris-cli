@@ -97,15 +97,15 @@ func TestSolcCompilerWarning(t *testing.T) {
 	}
 }
 
-func TestDefaultCompilerUnmarshalling(t *testing.T) {
-
-}
-
 func TestLinkingBinaries(t *testing.T) {
 
 }
 
 func TestLinkingBinariesAndNormalCompileMixed(t *testing.T) {
+
+}
+
+func TestDefaultCompilerUnmarshalling(t *testing.T) {
 
 }
 
