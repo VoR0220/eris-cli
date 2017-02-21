@@ -258,6 +258,73 @@ contract C {
 	}
 }
 
+func TestMultipleFilesCompiling(t *testing.T) {
+	var solFile1 string = `pragma solidity >=0.0.0;
+
+library Set {
+  struct Data { mapping(uint => bool) flags; }
+  function insert(Data storage self, uint value)
+      returns (bool)
+  {
+      if (self.flags[value])
+          return false; // already there
+      self.flags[value] = true;
+      return true;
+  }
+
+  function remove(Data storage self, uint value)
+      returns (bool)
+  {
+      if (!self.flags[value])
+          return false; // not there
+      self.flags[value] = false;
+      return true;
+  }
+
+  function contains(Data storage self, uint value)
+      returns (bool)
+  {
+      return self.flags[value];
+  }
+}`
+
+	var solFile2 string = `pragma solidity >=0.0.0;
+import "./set.sol";
+
+contract C {
+    Set.Data knownValues;
+    function register(uint value) {
+        if (!Set.insert(knownValues, value))
+            throw;
+    }
+}`
+	set, err := os.Create("Set.sol")
+	defer os.Remove("Set.sol")
+	if err != nil {
+		t.Fatal(err)
+	}
+	file.WriteString(solFile1)
+
+	c, err := os.Create("C.sol")
+	defer os.Remove("C.sol")
+	if err != nil {
+		t.Fatal(err)
+	}
+	file.WriteString(solFile1)
+	template := &SolcTemplate{
+		CombinedOutput: []string{"bin"},
+	}
+
+	solReturn, err := template.Compile([]string{"C.sol"}, "stable")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if solReturn.Error != nil || solReturn.Warning != "" || len(solReturn.Contracts) != 2 {
+		t.Fatalf("Expected no errors or warnings and expected contract items. Got %v for errors, %v for warnings, and %v for contract items", solReturn.Error, solReturn.Warning, solReturn.Contracts)
+	}
+}
+
 func TestDefaultCompilerUnmarshalling(t *testing.T) {
 
 }
