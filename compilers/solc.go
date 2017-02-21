@@ -58,28 +58,34 @@ type SolcTemplate struct {
 func (s *SolcTemplate) Compile(files []string, version string) (Return, error) {
 	solcExecute := []string{"solc"}
 	solReturn := &SolcReturn{}
-	var solFiles []string
 	//get docker repo
 	//append tag
 
 	//check files for .bin extension for linking addresses
 	//separate .sol and .bin files
 	//link .bins separately
-	for _, file := range files {
-		ext := path.Ext(file)
-		switch ext {
-		case ".sol":
-			solFiles = append(solFiles, file)
-		case ".bin":
-			binCommand := []string{"cat", file, "|", "solc", "--link", "--libraries", strings.Join(s.Libraries, ",")}
-			output, err := executeCompilerCommand("ethereum/solc:stable", binCommand)
-			if err != nil {
+	solFiles, binFiles, err := s.sortFiles(files)
+	if err != nil {
+		return Return{}, err
+	}
+
+	if len(binFiles) > 0 {
+		solcExecute = append(solcExecute, append([]string{"--link", "--libraries", strings.Join(s.Libraries, ",")}, binFiles...)...)
+		log.Warn(solcExecute)
+		output, err := executeCompilerCommand("ethereum/solc:stable", solcExecute)
+		//Parse output into a return
+		if err != nil {
+			if err.Error() != "Compiler error." {
 				return Return{}, err
 			}
-			solReturn.Contracts[strings.TrimRight(file, ext)] = &SolcItems{Bin: strings.TrimSpace(string(output))}
-		default:
-			return Return{}, fmt.Errorf("Unexpected file extension found during compilation for solc: %v", file)
+			solReturn.Error = errors.New(strings.TrimSpace(string(output)))
+			return Return{solReturn}, nil
 		}
+
+		if len(solFiles) == 0 {
+			return Return{}, nil
+		}
+		solcExecute = []string{"solc"}
 	}
 
 	//assemble command
@@ -132,4 +138,20 @@ func (s *SolcTemplate) Compile(files []string, version string) (Return, error) {
 	}
 
 	return Return{solReturn}, nil
+}
+
+func (s *SolcTemplate) sortFiles(files []string) ([]string, []string, error) {
+	var solFiles []string
+	var binFiles []string
+	for _, file := range files {
+		switch path.Ext(file) {
+		case ".sol":
+			solFiles = append(solFiles, file)
+		case ".bin":
+			binFiles = append(binFiles, file)
+		default:
+			return nil, nil, fmt.Errorf("Unexpected file extension found during compilation for solc: %v", file)
+		}
+	}
+	return solFiles, binFiles, nil
 }
