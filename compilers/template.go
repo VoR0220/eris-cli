@@ -16,9 +16,8 @@ type DefaultCompilers struct {
 }
 
 type CompilerDetails struct {
-	Name              string   `toml:"name"`
-	DockerRepo        string   `toml:"docker_repo"`
-	VersionsAvailable []string `toml:"versions_available"`
+	Name       string `toml:"name"`
+	DockerRepo string `toml:"docker_repo"`
 }
 
 type CompilerExecutionDetails struct {

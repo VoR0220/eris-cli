@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 
+	"github.com/eris-ltd/eris/config"
 	"github.com/eris-ltd/eris/definitions"
 	"github.com/eris-ltd/eris/version"
 )
@@ -13,13 +14,12 @@ const tomlHeader = `# This is a TOML config file.
 # For more information, see https://github.com/toml-lang/toml
 `
 
-// ------------------ compilers -----------------
-
 // ------------------ services ------------------
 
 var ServiceDefinitions = []string{
 	"ipfs",
 	"keys",
+	"solc",
 	// used by [eris chains start myChain --logrotate]
 	// but its docker image is not pulled on [eris init]
 	"logrotate",
@@ -163,7 +163,13 @@ This eris service is all but essential as part of the eris tool. The [eris files
 		serviceDefinition.Service.Ports = []string{`"4001:4001", `, `"5001:5001", `, `"` + port_to_use + `:` + port_to_use + `"`}
 		serviceDefinition.Service.ExecHost = "ERIS_IPFS_HOST"
 		serviceDefinition.Service.User = `"root"`
+	case "solc":
+		serviceDefinition.Name = "solc"
+		serviceDefinition.Description = `The Solidity Compiler: A great way to begin developing smart contracts. 
 
+This tool provides everything essential that you will need to write your smart contracts. Now fully dockerized and updateable.`
+		serviceDefinition.Service.AutoData = false
+		serviceDefinition.Service.Volumes = []string{config.BundlesPath}
 	case "logrotate":
 
 		serviceDefinition.Name = "logrotate"

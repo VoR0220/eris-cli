@@ -303,16 +303,16 @@ contract C {
 	if err != nil {
 		t.Fatal(err)
 	}
-	file.WriteString(solFile1)
+	set.WriteString(solFile1)
 
 	c, err := os.Create("C.sol")
 	defer os.Remove("C.sol")
 	if err != nil {
 		t.Fatal(err)
 	}
-	file.WriteString(solFile1)
+	c.WriteString(solFile2)
 	template := &SolcTemplate{
-		CombinedOutput: []string{"bin"},
+		CombinedOutput: []string{"bin", "abi"},
 	}
 
 	solReturn, err := template.Compile([]string{"C.sol"}, "stable")
@@ -323,6 +323,10 @@ contract C {
 	if solReturn.Error != nil || solReturn.Warning != "" || len(solReturn.Contracts) != 2 {
 		t.Fatalf("Expected no errors or warnings and expected contract items. Got %v for errors, %v for warnings, and %v for contract items", solReturn.Error, solReturn.Warning, solReturn.Contracts)
 	}
+}
+
+func TestRemappings(t *testing.T) {
+
 }
 
 func TestDefaultCompilerUnmarshalling(t *testing.T) {

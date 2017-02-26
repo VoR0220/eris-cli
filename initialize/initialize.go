@@ -5,7 +5,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
 
 	"github.com/eris-ltd/eris/config"
 	"github.com/eris-ltd/eris/definitions"
@@ -134,20 +133,15 @@ func pullDefaultImages(images []string) error {
 	// Rewrite with versioned image names (full names
 	// without a registry prefix).
 	versionedImageNames := map[string]string{
-		"data": config.Global.ImageData,
-		"keys": config.Global.ImageKeys,
-		"ipfs": config.Global.ImageIPFS,
-		"db":   config.Global.ImageDB,
-		"solc": config.Global.ImageSolc,
+		"data": path.Join(config.Global.DefaultRegistry, config.Global.ImageData),
+		"keys": path.Join(config.Global.DefaultRegistry, config.Global.ImageKeys),
+		"ipfs": path.Join(config.Global.DefaultRegistry, config.Global.ImageIPFS),
+		"db":   path.Join(config.Global.DefaultRegistry, config.Global.ImageDB),
+		"solc": "ethereum/solc:stable",
 	}
 
 	for i, image := range images {
 		images[i] = versionedImageNames[image]
-
-		// Attach default registry prefix.
-		if !strings.HasPrefix(images[i], config.Global.DefaultRegistry) {
-			images[i] = path.Join(config.Global.DefaultRegistry, images[i])
-		}
 	}
 
 	// Spacer.
