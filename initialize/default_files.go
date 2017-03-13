@@ -5,7 +5,6 @@ import (
 	"os"
 	"path"
 
-	"github.com/eris-ltd/eris/config"
 	"github.com/eris-ltd/eris/definitions"
 	"github.com/eris-ltd/eris/version"
 )
@@ -165,11 +164,12 @@ This eris service is all but essential as part of the eris tool. The [eris files
 		serviceDefinition.Service.User = `"root"`
 	case "solc":
 		serviceDefinition.Name = "solc"
+		serviceDefinition.Status = "alpha"
+		serviceDefinition.Service.Image = "ethereum/solc:stable"
 		serviceDefinition.Description = `The Solidity Compiler: A great way to begin developing smart contracts. 
 
 This tool provides everything essential that you will need to write your smart contracts. Now fully dockerized and updateable.`
 		serviceDefinition.Service.AutoData = false
-		serviceDefinition.Service.Volumes = []string{config.BundlesPath}
 	case "logrotate":
 
 		serviceDefinition.Name = "logrotate"

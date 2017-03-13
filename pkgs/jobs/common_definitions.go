@@ -24,44 +24,44 @@ type JobResults struct {
 
 type Job struct {
 	// Name of the job
-	Name string `mapstructure:"name" json:"name" yaml:"name" toml:"name"`
+	Name string `mapstructure:"name" yaml:"name"`
 	// Sets/Resets the primary account to use
-	Account *Account `mapstructure:"account" json:"account" yaml:"account" toml:"account"`
+	Account *Account `mapstructure:"account" yaml:"account"`
 	// Set an arbitrary value
-	Set *Set `mapstructure:"set" json:"set" yaml:"set" toml:"set"`
+	Set *Set `mapstructure:"set" yaml:"set"`
 	// Contract compile and send to the chain functions
-	Deploy *Deploy `mapstructure:"deploy" json:"deploy" yaml:"deploy" toml:"deploy"`
+	Deploy *Deploy `mapstructure:"deploy" yaml:"deploy"`
 	// Send tokens from one account to another
-	Send *Send `mapstructure:"send" json:"send" yaml:"send" toml:"send"`
+	Send *Send `mapstructure:"send" yaml:"send"`
 	// Utilize eris:db's native name registry to register a name
-	RegisterName *RegisterName `mapstructure:"register" json:"register" yaml:"register" toml:"register"`
+	RegisterName *RegisterName `mapstructure:"register" yaml:"register"`
 	// Sends a transaction which will update the permissions of an account. Must be sent from an account which
 	// has root permissions on the blockchain (as set by either the genesis.json or in a subsequence transaction)
-	Permission *Permission `mapstructure:"permission" json:"permission" yaml:"permission" toml:"permission"`
+	Permission *Permission `mapstructure:"permission" yaml:"permission"`
 	// Sends a bond transaction
-	Bond *Bond `mapstructure:"bond" json:"bond" yaml:"bond" toml:"bond"`
+	Bond *Bond `mapstructure:"bond" yaml:"bond"`
 	// Sends an unbond transaction
-	Unbond *Unbond `mapstructure:"unbond" json:"unbond" yaml:"unbond" toml:"unbond"`
+	Unbond *Unbond `mapstructure:"unbond" yaml:"unbond"`
 	// Sends a rebond transaction
-	Rebond *Rebond `mapstructure:"rebond" json:"rebond" yaml:"rebond" toml:"rebond"`
+	Rebond *Rebond `mapstructure:"rebond" yaml:"rebond"`
 	// Sends a transaction to a contract. Will utilize eris-abi under the hood to perform all of the heavy lifting
-	Call *Call `mapstructure:"call" json:"call" yaml:"call" toml:"call"`
+	Call *Call `mapstructure:"call" yaml:"call"`
 	// Wrapper for mintdump dump. WIP
-	DumpState *DumpState `mapstructure:"dump-state" json:"dump-state" yaml:"dump-state" toml:"dump-state"`
+	DumpState *DumpState `mapstructure:"dump-state" yaml:"dump-state"`
 	// Wrapper for mintdum restore. WIP
-	RestoreState *RestoreState `mapstructure:"restore-state" json:"restore-state" yaml:"restore-state" toml:"restore-state"`
+	RestoreState *RestoreState `mapstructure:"restore-state" yaml:"restore-state"`
 	// Sends a "simulated call" to a contract. Predominantly used for accessor functions ("Getters" within contracts)
-	QueryContract *QueryContract `mapstructure:"query-contract" json:"query-contract" yaml:"query-contract" toml:"query-contract"`
+	QueryContract *QueryContract `mapstructure:"query-contract" yaml:"query-contract"`
 	// Queries information from an account.
-	QueryAccount *QueryAccount `mapstructure:"query-account" json:"query-account" yaml:"query-account" toml:"query-account"`
+	QueryAccount *QueryAccount `mapstructure:"query-account" yaml:"query-account"`
 	// Queries information about a name registered with eris:db's native name registry
-	QueryName *QueryName `mapstructure:"query-name" json:"query-name" yaml:"query-name" toml:"query-name"`
+	QueryName *QueryName `mapstructure:"query-name" yaml:"query-name"`
 	// Queries information about the validator set
-	QueryVals *QueryVals `mapstructure:"query-vals" json:"query-vals" yaml:"query-vals" toml:"query-vals"`
+	QueryVals *QueryVals `mapstructure:"query-vals" yaml:"query-vals"`
 	// Makes and assertion (useful for testing purposes)
-	Assert *Assert `mapstructure:"assert" json:"assert" yaml:"assert" toml:"assert"`
+	Assert *Assert `mapstructure:"assert" yaml:"assert"`
 	// Legacy job field soon to be deprecated
-	Legacy *LegacyJob `mapstructure:"job" json:"job" yaml:"job" toml:"job"`
+	Legacy *LegacyJob `mapstructure:"job" yaml:"job"`
 	// Results of the job
 	Results JobResults
 }
@@ -107,40 +107,40 @@ func (job *Job) beginJob(jobs *Jobs) (*JobResults, error) {
 
 type LegacyJob struct {
 	// Sets/Resets the primary account to use
-	Account *Account `mapstructure:"account" json:"account" yaml:"account" toml:"account"`
+	Account *Account `mapstructure:"account" yaml:"account"`
 	// Set an arbitrary value
-	Set *Set `mapstructure:"set" json:"set" yaml:"set" toml:"set"`
+	Set *Set `mapstructure:"set" yaml:"set"`
 	// Contract compile and send to the chain functions
-	Deploy *Deploy `mapstructure:"deploy" json:"deploy" yaml:"deploy" toml:"deploy"`
+	Deploy *Deploy `mapstructure:"deploy" yaml:"deploy"`
 	// Send tokens from one account to another
-	Send *Send `mapstructure:"send" json:"send" yaml:"send" toml:"send"`
+	Send *Send `mapstructure:"send" yaml:"send"`
 	// Utilize eris:db's native name registry to register a name
-	RegisterName *RegisterName `mapstructure:"register" json:"register" yaml:"register" toml:"register"`
+	RegisterName *RegisterName `mapstructure:"register" yaml:"register"`
 	// Sends a transaction which will update the permissions of an account. Must be sent from an account which
 	// has root permissions on the blockchain (as set by either the genesis.json or in a subsequence transaction)
-	Permission *Permission `mapstructure:"permission" json:"permission" yaml:"permission" toml:"permission"`
+	Permission *Permission `mapstructure:"permission" yaml:"permission"`
 	// Sends a bond transaction
-	Bond *Bond `mapstructure:"bond" json:"bond" yaml:"bond" toml:"bond"`
+	Bond *Bond `mapstructure:"bond" yaml:"bond"`
 	// Sends an unbond transaction
-	Unbond *Unbond `mapstructure:"unbond" json:"unbond" yaml:"unbond" toml:"unbond"`
+	Unbond *Unbond `mapstructure:"unbond" yaml:"unbond"`
 	// Sends a rebond transaction
-	Rebond *Rebond `mapstructure:"rebond" json:"rebond" yaml:"rebond" toml:"rebond"`
+	Rebond *Rebond `mapstructure:"rebond" yaml:"rebond"`
 	// Sends a transaction to a contract. Will utilize eris-abi under the hood to perform all of the heavy lifting
-	Call *Call `mapstructure:"call" json:"call" yaml:"call" toml:"call"`
+	Call *Call `mapstructure:"call" yaml:"call"`
 	// Wrapper for mintdump dump. WIP
-	DumpState *DumpState `mapstructure:"dump-state" json:"dump-state" yaml:"dump-state" toml:"dump-state"`
+	DumpState *DumpState `mapstructure:"dump-state" yaml:"dump-state"`
 	// Wrapper for mintdum restore. WIP
-	RestoreState *RestoreState `mapstructure:"restore-state" json:"restore-state" yaml:"restore-state" toml:"restore-state"`
+	RestoreState *RestoreState `mapstructure:"restore-state" yaml:"restore-state"`
 	// Sends a "simulated call" to a contract. Predominantly used for accessor functions ("Getters" within contracts)
-	QueryContract *QueryContract `mapstructure:"query-contract" json:"query-contract" yaml:"query-contract" toml:"query-contract"`
+	QueryContract *QueryContract `mapstructure:"query-contract" yaml:"query-contract"`
 	// Queries information from an account.
-	QueryAccount *QueryAccount `mapstructure:"query-account" json:"query-account" yaml:"query-account" toml:"query-account"`
+	QueryAccount *QueryAccount `mapstructure:"query-account" yaml:"query-account"`
 	// Queries information about a name registered with eris:db's native name registry
-	QueryName *QueryName `mapstructure:"query-name" json:"query-name" yaml:"query-name" toml:"query-name"`
+	QueryName *QueryName `mapstructure:"query-name" yaml:"query-name"`
 	// Queries information about the validator set
-	QueryVals *QueryVals `mapstructure:"query-vals" json:"query-vals" yaml:"query-vals" toml:"query-vals"`
+	QueryVals *QueryVals `mapstructure:"query-vals" yaml:"query-vals"`
 	// Makes and assertion (useful for testing purposes)
-	Assert *Assert `mapstructure:"assert" json:"assert" yaml:"assert" toml:"assert"`
+	Assert *Assert `mapstructure:"assert" yaml:"assert"`
 }
 
 func (job *LegacyJob) deprecationNotice() {

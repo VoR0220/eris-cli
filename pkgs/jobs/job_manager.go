@@ -23,7 +23,7 @@ type Jobs struct {
 	DefaultOutput string
 	DefaultSets   []string
 	Overwrite     bool
-	Jobs          []*Job `mapstructure:"jobs" json:"jobs" yaml:"jobs" toml:"jobs"`
+	Jobs          []*Job `mapstructure:"jobs" yaml:"jobs"`
 	JobMap        map[string]*JobResults
 }
 
