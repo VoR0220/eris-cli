@@ -149,10 +149,13 @@ func (deploy *Deploy) PreProcess(jobs *Jobs) (err error) {
 	if err != nil {
 		return err
 	}
-	deploy.Data, err = preProcessInterface(deploy.Data, jobs)
-	if err != nil {
-		return err
+
+	for i, data := range deploy.Data {
+		if deploy.Data[i], err = preProcessInterface(data, jobs); err != nil {
+			return err
+		}
 	}
+
 	deploy.Amount, _, err = preProcessString(deploy.Amount, jobs)
 	if err != nil {
 		return err
@@ -173,10 +176,7 @@ func (deploy *Deploy) PreProcess(jobs *Jobs) (err error) {
 	if err != nil {
 		return err
 	}
-	deploy.SaveBinary, _, err = preProcessString(deploy.SaveBinary, jobs)
-	if err != nil {
-		return err
-	}
+
 	return nil
 }
 
@@ -224,9 +224,10 @@ func (call *Call) PreProcess(jobs *Jobs) (err error) {
 	if err != nil {
 		return err
 	}
-	call.Data, err = preProcessInterface(call.Data, jobs)
-	if err != nil {
-		return err
+	for i, data := range call.Data {
+		if call.Data[i], err = preProcessInterface(data, jobs); err != nil {
+			return err
+		}
 	}
 	call.Amount, _, err = preProcessString(call.Amount, jobs)
 	if err != nil {
