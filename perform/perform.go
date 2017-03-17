@@ -86,11 +86,7 @@ func DockerRunData(ops *definitions.Operation, service *definitions.Service) (re
 	// Clean up the container.
 	defer func() {
 		log.WithField("=>", opts.Name).Info("Removing data container")
-		if err2 := removeContainer(opts.Name, true, false); err2 != nil {
-			if os.Getenv("CIRCLE_BRANCH") == "" {
-				err = fmt.Errorf("Tragic! Error removing data container after executing (%v): %v", err, err2)
-			}
-		}
+		removeContainer(opts.Name, true, false)
 		log.WithField("=>", opts.Name).Info("Container removed")
 	}()
 

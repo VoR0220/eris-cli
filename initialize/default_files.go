@@ -16,9 +16,9 @@ const tomlHeader = `# This is a TOML config file.
 // ------------------ services ------------------
 
 var ServiceDefinitions = []string{
-	"compilers",
 	"ipfs",
 	"keys",
+	"solc",
 	// used by [eris chains start myChain --logrotate]
 	// but its docker image is not pulled on [eris init]
 	"logrotate",
@@ -146,17 +146,6 @@ This service is usually linked to a chain and/or an application. Its functionali
 		serviceDefinition.Service.Ports = []string{`"4767:4767"`} // XXX these exposed ports are a gaping security flaw
 		serviceDefinition.Service.ExecHost = "ERIS_KEYS_HOST"
 
-	case "compilers":
-
-		serviceDefinition.Name = "compilers"
-		serviceDefinition.Description = `Monax's Solidity Compiler Server.
-
-This eris service compiles smart contract languages.`
-		serviceDefinition.Status = "beta"
-		serviceDefinition.Service.Image = path.Join(version.DefaultRegistry, version.ImageCompilers)
-		serviceDefinition.Service.AutoData = true
-		//serviceDefinition.Service.Ports = []string{`"9090:9090"`}
-
 	case "ipfs":
 
 		port_to_use := os.Getenv("ERIS_CLI_TESTS_PORT")
@@ -173,7 +162,14 @@ This eris service is all but essential as part of the eris tool. The [eris files
 		serviceDefinition.Service.Ports = []string{`"4001:4001", `, `"5001:5001", `, `"` + port_to_use + `:` + port_to_use + `"`}
 		serviceDefinition.Service.ExecHost = "ERIS_IPFS_HOST"
 		serviceDefinition.Service.User = `"root"`
+	case "solc":
+		serviceDefinition.Name = "solc"
+		serviceDefinition.Status = "alpha"
+		serviceDefinition.Service.Image = "ethereum/solc:stable"
+		serviceDefinition.Description = `The Solidity Compiler: A great way to begin developing smart contracts. 
 
+This tool provides everything essential that you will need to write your smart contracts. Now fully dockerized and updateable.`
+		serviceDefinition.Service.AutoData = false
 	case "logrotate":
 
 		serviceDefinition.Name = "logrotate"

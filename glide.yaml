@@ -5,7 +5,7 @@ import:
 - package: github.com/bugsnag/bugsnag-go
   version: v1.1.1
 - package: github.com/docker/docker
-  version: v1.13.0
+  version: v1.13.1
   subpackages:
   - pkg/archive
   - pkg/jsonmessage
@@ -33,10 +33,6 @@ import:
   subpackages:
   - unix
 - package: gopkg.in/yaml.v2
-- package: github.com/eris-ltd/eris-compilers
-  version: develop
-  subpackages:
-  - perform
 - package: github.com/eris-ltd/eris-db
   version: develop
   subpackages:

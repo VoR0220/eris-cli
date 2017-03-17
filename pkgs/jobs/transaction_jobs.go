@@ -18,6 +18,7 @@ import (
 type Send struct {
 	// (Optional, if account job or global account set) address of the account from which to send (the
 	// public key for the account must be available to eris-keys)
+<<<<<<< HEAD
 	Source string `mapstructure:"source" json:"source" yaml:"source" toml:"source"`
 	// (Required) address of the account to send the tokens
 	Destination string `mapstructure:"destination" json:"destination" yaml:"destination" toml:"destination"`
@@ -26,6 +27,16 @@ type Send struct {
 	// (Optional, advanced only) nonce to use when eris-keys signs the transaction (do not use unless you
 	// know what you're doing)
 	Nonce string `mapstructure:"nonce" json:"nonce" yaml:"nonce" toml:"nonce"`
+=======
+	Source string `mapstructure:"source" yaml:"source"`
+	// (Required) address of the account to send the tokens
+	Destination string `mapstructure:"destination" yaml:"destination"`
+	// (Required) amount of tokens to send from the `source` to the `destination`
+	Amount string `mapstructure:"amount" yaml:"amount"`
+	// (Optional, advanced only) nonce to use when eris-keys signs the transaction (do not use unless you
+	// know what you're doing)
+	Nonce string `mapstructure:"nonce" yaml:"nonce"`
+>>>>>>> feature-newCompilers
 }
 
 func (send *Send) PreProcess(jobs *Jobs) (err error) {
@@ -85,6 +96,7 @@ func (send *Send) Execute(jobs *Jobs) (*JobResults, error) {
 type RegisterName struct {
 	// (Optional, if account job or global account set) address of the account from which to send (the
 	// public key for the account must be available to eris-keys)
+<<<<<<< HEAD
 	Source string `mapstructure:"source" json:"source" yaml:"source" toml:"source"`
 	// (Required) name which will be registered
 	Name string `mapstructure:"name" json:"name" yaml:"name" toml:"name"`
@@ -99,6 +111,22 @@ type RegisterName struct {
 	// (Optional, advanced only) nonce to use when eris-keys signs the transaction (do not use unless you
 	// know what you're doing)
 	Nonce string `mapstructure:"nonce" json:"nonce" yaml:"nonce" toml:"nonce"`
+=======
+	Source string `mapstructure:"source" yaml:"source"`
+	// (Required) name which will be registered
+	Name string `mapstructure:"name" yaml:"name"`
+	// (Optional, if data_file is used; otherwise required) data which will be stored at the `name` key
+	Data string `mapstructure:"data" yaml:"data"`
+	// (Optional) csv file in the form (name,data[,amount]) which can be used to bulk register names
+	DataFile string `mapstructure:"data_file" json:"data_file" yaml:"data_file" toml:"data_file"`
+	// (Optional) amount of blocks which the name entry will be reserved for the registering user
+	Amount string `mapstructure:"amount" yaml:"amount"`
+	// (Optional) validators' fee
+	Fee string `mapstructure:"fee" yaml:"fee"`
+	// (Optional, advanced only) nonce to use when eris-keys signs the transaction (do not use unless you
+	// know what you're doing)
+	Nonce string `mapstructure:"nonce" yaml:"nonce"`
+>>>>>>> feature-newCompilers
 }
 
 func (name *RegisterName) PreProcess(jobs *Jobs) (err error) {
@@ -238,6 +266,7 @@ func (name *RegisterName) Execute(jobs *Jobs) (*JobResults, error) {
 type Permission struct {
 	// (Optional, if account job or global account set) address of the account from which to send (the
 	// public key for the account must be available to eris-keys)
+<<<<<<< HEAD
 	Source string `mapstructure:"source" json:"source" yaml:"source" toml:"source"`
 	// (Required) actions must be in the set ["set_base", "unset_base", "set_global", "add_role" "rm_role"]
 	Action string `mapstructure:"action" json:"action" yaml:"action" toml:"action"`
@@ -253,6 +282,23 @@ type Permission struct {
 	// (Optional, advanced only) nonce to use when eris-keys signs the transaction (do not use unless you
 	// know what you're doing)
 	Nonce string `mapstructure:"nonce" json:"nonce" yaml:"nonce" toml:"nonce"`
+=======
+	Source string `mapstructure:"source" yaml:"source"`
+	// (Required) actions must be in the set ["set_base", "unset_base", "set_global", "add_role" "rm_role"]
+	Action string `mapstructure:"action" yaml:"action"`
+	// (Required, unless add_role or rm_role action selected) the name of the permission flag which is to
+	// be updated
+	PermissionFlag string `mapstructure:"permission" yaml:"permission"`
+	// (Required) the value of the permission or role which is to be updated
+	Value string `mapstructure:"value" yaml:"value"`
+	// (Required) the target account which is to be updated
+	Target string `mapstructure:"target" yaml:"target"`
+	// (Required, if add_role or rm_role action selected) the role which should be given to the account
+	Role string `mapstructure:"role" yaml:"role"`
+	// (Optional, advanced only) nonce to use when eris-keys signs the transaction (do not use unless you
+	// know what you're doing)
+	Nonce string `mapstructure:"nonce" yaml:"nonce"`
+>>>>>>> feature-newCompilers
 }
 
 func (perm *Permission) PreProcess(jobs *Jobs) (err error) {
@@ -328,12 +374,21 @@ type Bond struct {
 	// (Required) public key of the address which will be bonded
 	PublicKey string `mapstructure:"pub_key" json:"pub_key" yaml:"pub_key" toml:"pub_key"`
 	// (Required) address of the account which will be bonded
+<<<<<<< HEAD
 	Account string `mapstructure:"account" json:"account" yaml:"account" toml:"account"`
 	// (Required) amount of tokens which will be bonded
 	Amount string `mapstructure:"amount" json:"amount" yaml:"amount" toml:"amount"`
 	// (Optional, advanced only) nonce to use when eris-keys signs the transaction (do not use unless you
 	// know what you're doing)
 	Nonce string `mapstructure:"nonce" json:"nonce" yaml:"nonce" toml:"nonce"`
+=======
+	Account string `mapstructure:"account" yaml:"account"`
+	// (Required) amount of tokens which will be bonded
+	Amount string `mapstructure:"amount" yaml:"amount"`
+	// (Optional, advanced only) nonce to use when eris-keys signs the transaction (do not use unless you
+	// know what you're doing)
+	Nonce string `mapstructure:"nonce" yaml:"nonce"`
+>>>>>>> feature-newCompilers
 }
 
 func (bond *Bond) PreProcess(jobs *Jobs) (err error) {
@@ -367,10 +422,17 @@ func (bond *Bond) Execute(jobs *Jobs) (*JobResults, error) {
 
 type Unbond struct {
 	// (Required) address of the account which to unbond
+<<<<<<< HEAD
 	Account string `mapstructure:"account" json:"account" yaml:"account" toml:"account"`
 	// (Required) block on which the unbonding will take place (users may unbond at any
 	// time >= currentBlock)
 	Height string `mapstructure:"height" json:"height" yaml:"height" toml:"height"`
+=======
+	Account string `mapstructure:"account" yaml:"account"`
+	// (Required) block on which the unbonding will take place (users may unbond at any
+	// time >= currentBlock)
+	Height string `mapstructure:"height" yaml:"height"`
+>>>>>>> feature-newCompilers
 }
 
 func (unbond *Unbond) PreProcess(jobs *Jobs) (err error) {
@@ -393,10 +455,17 @@ func (unbond *Unbond) Execute(jobs *Jobs) (*JobResults, error) {
 
 type Rebond struct {
 	// (Required) address of the account which to rebond
+<<<<<<< HEAD
 	Account string `mapstructure:"account" json:"account" yaml:"account" toml:"account"`
 	// (Required) block on which the rebonding will take place (users may rebond at any
 	// time >= (unbondBlock || currentBlock))
 	Height string `mapstructure:"height" json:"height" yaml:"height" toml:"height"`
+=======
+	Account string `mapstructure:"account" yaml:"account"`
+	// (Required) block on which the rebonding will take place (users may rebond at any
+	// time >= (unbondBlock || currentBlock))
+	Height string `mapstructure:"height" yaml:"height"`
+>>>>>>> feature-newCompilers
 }
 
 func (rebond *Rebond) PreProcess(jobs *Jobs) error {
