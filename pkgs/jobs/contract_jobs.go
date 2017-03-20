@@ -118,9 +118,8 @@ type Deploy struct {
 	// (Optional) list of Name:Address separated by commas of libraries (see solc --help)
 	Libraries []string `mapstructure:"libraries" yaml:"libraries"`
 	// (Optional) additional arguments to send along with the contract code
-	Data     []interface{} `mapstructure:"data" yaml:"data"`
-	Compiler interface{}   `mapstructure:"compiler" yaml:"compiler"`
-
+	Data         []interface{} `mapstructure:"data" yaml:"data"`
+	CompilerStub interface{}   `mapstructure:"compiler" yaml:"compiler"`
 	// (Optional) amount of tokens to send to the contract which will (after deployment) reside in the
 	// contract's account
 	Amount string `mapstructure:"amount" yaml:"amount"`
@@ -133,7 +132,8 @@ type Deploy struct {
 	SaveBinary bool `mapstructure:"save" yaml:"save"`
 	// (Optional, advanced only) nonce to use when eris-keys signs the transaction (do not use unless you
 	// know what you're doing)
-	Nonce string `mapstructure:"nonce" yaml:"nonce"`
+	Nonce    string `mapstructure:"nonce" yaml:"nonce"`
+	Compiler *Compile
 }
 
 func (deploy *Deploy) PreProcess(jobs *Jobs) (err error) {
@@ -177,7 +177,61 @@ func (deploy *Deploy) PreProcess(jobs *Jobs) (err error) {
 		return err
 	}
 
+	if deploy.CompilerStub != nil {
+		compiler, err := preProcessPluginJob(deploy.CompilerStub, jobs)
+		if err != nil {
+			return err
+		}
+		switch compiler := compiler.(type) {
+		case *Compile:
+			compiler.Files = append(compiler.Files, deploy.Contract)
+			switch compilerType := compiler.Compiler.(type) {
+			case compilers.SolcTemplate:
+				compilerType.Libraries = append(compilerType.Libraries, deploy.Libraries...)
+				compiler.Compiler = compilerType
+			default:
+				return fmt.Errorf("Could not find compiler to use")
+			}
+			deploy.Compiler = compiler
+		default:
+			return fmt.Errorf("Invalid preprocessing of compiler")
+		}
+
+	} else {
+		compiler := &Compile{}
+		compiler.Compiler = compilers.SolcTemplate{
+			CombinedOutput: []string{"bin", "abi"},
+			Libraries:      deploy.Libraries,
+		}
+		compiler.Files = []string{deploy.Contract}
+		compiler.Version = "stable"
+		deploy.Compiler = compiler
+	}
+
 	return nil
+}
+
+func (deploy *Deploy) Execute(jobs *Jobs) (*JobResults, error) {
+	switch deploy.Compiler.Compiler {
+	case compilers.SolcTemplate:
+		results, err := deploy.Compiler.Execute(jobs)
+		if err != nil {
+			return JobResults{}, fmt.Errorf("Compiler error: %v", err)
+		}
+
+		switch deploy.Instance {
+		case "all", "":
+			log.Info("Deploying all contracts")
+			for name, contract := range results.NamedResults {
+				log.Warn("Deploying contract: ", name)
+
+			}
+		default:
+		}
+
+	default:
+		return JobsResults{}, fmt.Errorf("Invalid compiler used in execution process")
+	}
 }
 
 type Call struct {

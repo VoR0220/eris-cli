@@ -29,6 +29,8 @@ type Job struct {
 	Account *Account `mapstructure:"account" yaml:"account"`
 	// Set an arbitrary value
 	Set *Set `mapstructure:"set" yaml:"set"`
+	// Compile files
+	Compile *Compile `mapstructure:"compile" yaml:"compile"`
 	// Contract compile and send to the chain functions
 	Deploy *Deploy `mapstructure:"deploy" yaml:"deploy"`
 	// Send tokens from one account to another
@@ -110,6 +112,8 @@ type LegacyJob struct {
 	Account *Account `mapstructure:"account" yaml:"account"`
 	// Set an arbitrary value
 	Set *Set `mapstructure:"set" yaml:"set"`
+	// Compile files
+	Compile *Compile `mapstructure:"compile" yaml:"compile"`
 	// Contract compile and send to the chain functions
 	Deploy *Deploy `mapstructure:"deploy" yaml:"deploy"`
 	// Send tokens from one account to another

@@ -73,6 +73,24 @@ func preProcessString(key string, jobs *Jobs) (string, interface{}, error) {
 	}
 }
 
+func preProcessPluginJob(plugin interface{}, jobs *Jobs) (JobsRunner, error) {
+	unfound := "Cannot deduce valid plugin type from %v"
+	switch plugin := plugin.(type) {
+	case string:
+		if strings.HasPrefix(plugin, "$") {
+			key := strings.TrimPrefix(plugin, "$")
+			for _, job := range jobs.Jobs {
+				if job.Name == key {
+					return job.getType()
+				}
+			}
+		}
+		return nil, fmt.Errorf(unfound, plugin)
+	default:
+		return nil, fmt.Errorf(unfound, plugin)
+	}
+}
+
 func useDefault(thisOne, defaultOne string) string {
 	if thisOne == "" {
 		return defaultOne
