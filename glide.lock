@@ -76,7 +76,7 @@ imports:
   - util
   - util/slice
 - name: github.com/ethereum/go-ethereum
-  version: bdef758d5c6d397584d0c35e53d6f6c318e61351
+  version: 1dfd65f6d047407585845dfe9be2ff52a8b9f3ab
   subpackages:
   - accounts/abi
   - common

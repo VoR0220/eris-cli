@@ -212,25 +212,29 @@ func (deploy *Deploy) PreProcess(jobs *Jobs) (err error) {
 }
 
 func (deploy *Deploy) Execute(jobs *Jobs) (*JobResults, error) {
-	switch deploy.Compiler.Compiler {
+	switch deploy.Compiler.Compiler.(type) {
 	case compilers.SolcTemplate:
 		results, err := deploy.Compiler.Execute(jobs)
 		if err != nil {
-			return JobResults{}, fmt.Errorf("Compiler error: %v", err)
+			return &JobResults{}, fmt.Errorf("Compiler error: %v", err)
 		}
 
-		switch deploy.Instance {
-		case "all", "":
+		if deploy.Instance == "all" || deploy.Instance == "" {
 			log.Info("Deploying all contracts")
 			for name, contract := range results.NamedResults {
 				log.Warn("Deploying contract: ", name)
 
 			}
-		default:
+		} else {
+			if object, ok := results.NamedResults[deploy.Instance]; ok {
+
+			} else {
+				return &JobResults{}, fmt.Errorf("Could not acquire requested instance named %v", deploy.Instance)
+			}
 		}
 
 	default:
-		return JobsResults{}, fmt.Errorf("Invalid compiler used in execution process")
+		return &JobResults{}, fmt.Errorf("Invalid compiler used in execution process")
 	}
 }
 

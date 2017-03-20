@@ -1,4 +1,4 @@
-// Copyright 2015 The go-ethereum Authors
+// Copyright 2017 The go-ethereum Authors
 // This file is part of the go-ethereum library.
 //
 // The go-ethereum library is free software: you can redistribute it and/or modify
@@ -14,26 +14,32 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-package secp256k1
+package hexutil_test
 
 import (
-	"bytes"
-	"encoding/hex"
-	"math/big"
-	"testing"
+	"encoding/json"
+	"fmt"
+
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
-func TestReadBits(t *testing.T) {
-	check := func(input string) {
-		want, _ := hex.DecodeString(input)
-		int, _ := new(big.Int).SetString(input, 16)
-		buf := make([]byte, len(want))
-		readBits(buf, int)
-		if !bytes.Equal(buf, want) {
-			t.Errorf("have: %x\nwant: %x", buf, want)
-		}
-	}
-	check("000000000000000000000000000000000000000000000000000000FEFCF3F8F0")
-	check("0000000000012345000000000000000000000000000000000000FEFCF3F8F0")
-	check("18F8F8F1000111000110011100222004330052300000000000000000FEFCF3F8F0")
+type MyType [5]byte
+
+func (v *MyType) UnmarshalText(input []byte) error {
+	return hexutil.UnmarshalFixedText("MyType", input, v[:])
+}
+
+func (v MyType) String() string {
+	return hexutil.Bytes(v[:]).String()
+}
+
+func ExampleUnmarshalFixedText() {
+	var v1, v2 MyType
+	fmt.Println("v1 error:", json.Unmarshal([]byte(`"0x01"`), &v1))
+	fmt.Println("v2 error:", json.Unmarshal([]byte(`"0x0101010101"`), &v2))
+	fmt.Println("v2:", v2)
+	// Output:
+	// v1 error: hex string has length 2, want 10 for MyType
+	// v2 error: <nil>
+	// v2: 0x0101010101
 }
