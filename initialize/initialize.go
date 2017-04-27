@@ -60,6 +60,8 @@ func Initialize(do *definitions.Do) error {
 
 	// TODO: [Silas] um, perhaps we should actually ask the filesystem what we've
 	// _really_ done rather than hard coding the output of tree...
+	// [RJ] - agrees. I believe there's a nice tree command in go friendly manner:
+	// https://github.com/campoy/tools/tree/master/tree
 	log.Warn(`
 Directory structure initialized:
 
@@ -130,6 +132,7 @@ func pullDefaultImages(images []string) error {
 			"keys",
 			"db",
 			"compilers",
+			"solc",
 		}
 	}
 
@@ -140,13 +143,15 @@ func pullDefaultImages(images []string) error {
 		"keys":      version.ImageKeys,
 		"db":        version.ImageDB,
 		"compilers": version.ImageCompilers,
+		"solc":      version.ImageSolc,
 	}
 
 	for i, image := range images {
 		images[i] = versionedImageNames[image]
 
 		// Attach default registry prefix.
-		if !strings.HasPrefix(images[i], version.DefaultRegistry) {
+		// [rj] - this is very hacky, need to fix this either in images.go via a map, struct or a function
+		if !strings.HasPrefix(images[i], version.DefaultRegistry) && image != "solc" {
 			images[i] = path.Join(version.DefaultRegistry, images[i])
 		}
 	}
