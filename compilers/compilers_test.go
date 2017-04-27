@@ -3,6 +3,7 @@ package compilers
 import (
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -106,7 +107,7 @@ library Set {
 }`
 
 const solFile2 = `pragma solidity >=0.0.0;
-import "./set.sol";
+import "set.sol";
 
 contract C {
     Set.Data knownValues;
@@ -271,8 +272,8 @@ func TestLinkingBinariesAndNormalCompileMixed(t *testing.T) {
 }
 
 func TestMultipleFilesCompiling(t *testing.T) {
-	set, err := os.Create("Set.sol")
-	defer os.Remove("Set.sol")
+	set, err := os.Create("set.sol")
+	defer os.Remove("set.sol")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -299,5 +300,30 @@ func TestMultipleFilesCompiling(t *testing.T) {
 }
 
 func TestRemappings(t *testing.T) {
+	set, err := os.Create(filepath.Join("./tempDir/", "set.sol"))
+	defer os.Remove(filepath.Join("./tempDir/", "set.sol"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	set.WriteString(solFile1)
 
+	c, err := os.Create("C.sol")
+	defer os.Remove("C.sol")
+	if err != nil {
+		t.Fatal(err)
+	}
+	c.WriteString(solFile2)
+	template := &SolcTemplate{
+		CombinedOutput: []string{"bin", "abi"},
+		Remappings:     []string{"set.sol:./tempDir/set.sol"},
+	}
+
+	solReturn, err := template.Compile([]string{"C.sol"}, version.SOLC_VERSION)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if solReturn.Error != nil || solReturn.Warning != "" || len(solReturn.Contracts) != 2 {
+		t.Fatalf("Expected no errors or warnings and expected contract items. Got %v for errors, %v for warnings, and %v for contract items", solReturn.Error, solReturn.Warning, solReturn.Contracts)
+	}
 }
