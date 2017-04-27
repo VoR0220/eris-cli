@@ -15,6 +15,7 @@ const tomlHeader = `# This is a TOML config file.
 // ------------------ services ------------------
 
 var ServiceDefinitions = []string{
+	"solc"
 	"compilers",
 	"keys",
 	// used by [monax chains start myChain --logrotate]
@@ -154,6 +155,14 @@ This monax service compiles smart contract languages.`
 		serviceDefinition.Service.Image = path.Join(version.DefaultRegistry, version.ImageCompilers)
 		serviceDefinition.Service.AutoData = true
 		serviceDefinition.Service.Ports = []string{`"9090:9090"`}
+	case "solc":
+
+		serviceDefinition.Name = "solc"
+		serviceDefinition.Description = `Ethereum Solidity Compiler`
+		serviceDefinition.Status = "beta"
+		serviceDefinition.Service.Image = path.Join(version.BackupRegistry, version.ImageSolc)
+		// [rj] - todo: We need to make volume usage more easily configurable in a redo of the services
+		//serviceDefinition.Service.Volumes = []string{`""`}
 
 	case "logrotate":
 
