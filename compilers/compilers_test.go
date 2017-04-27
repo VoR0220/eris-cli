@@ -272,8 +272,10 @@ func TestLinkingBinariesAndNormalCompileMixed(t *testing.T) {
 }
 
 func TestMultipleFilesCompiling(t *testing.T) {
+
 	set, err := os.Create("set.sol")
 	defer os.Remove("set.sol")
+
 	if err != nil {
 		t.Fatal(err)
 	}

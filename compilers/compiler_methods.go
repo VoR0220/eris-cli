@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/monax/cli/config"
 	"github.com/monax/cli/log"
 	"github.com/monax/cli/util"
 
@@ -35,7 +34,7 @@ func ExecuteCompilerCommand(image string, command []string) ([]byte, error) {
 			Cmd:             command,
 		},
 		HostConfig: &docker.HostConfig{
-			Binds: []string{pwd + ":" + "/home/", config.BundlesPath + ":" + "/home/bundles"},
+			Binds: []string{pwd + ":" + "/home/"},
 		},
 	}
 	container, err := util.DockerClient.CreateContainer(opts)
