@@ -300,11 +300,16 @@ func TestMultipleFilesCompiling(t *testing.T) {
 }
 
 func TestRemappings(t *testing.T) {
-	set, err := os.Create(filepath.Join("./tempDir/", "set.sol"))
-	defer os.Remove(filepath.Join("./tempDir/", "set.sol"))
+	if err := os.MkdirAll("."+string(filepath.Separator)+"tempDir", 0777); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove("./tempDir/")
+	os.Chdir("tempDir")
+	set, err := os.Create("set.sol")
 	if err != nil {
 		t.Fatal(err)
 	}
+	os.Chdir("..")
 	set.WriteString(solFile1)
 
 	c, err := os.Create("C.sol")
@@ -315,7 +320,7 @@ func TestRemappings(t *testing.T) {
 	c.WriteString(solFile2)
 	template := &SolcTemplate{
 		CombinedOutput: []string{"bin", "abi"},
-		Remappings:     []string{"set.sol:./tempDir/set.sol"},
+		Remappings:     []string{`set.sol=./tempDir/set.sol`},
 	}
 
 	solReturn, err := template.Compile([]string{"C.sol"}, version.SOLC_VERSION)

@@ -100,14 +100,14 @@ func (s *SolcTemplate) Compile(files []string, version string) (Return, error) {
 	case s.GasEstimate:
 		solcExecute = append(solcExecute, "--gas")
 	default:
+		if len(s.Remappings) > 0 {
+			solcExecute = append(solcExecute, strings.Join(s.Remappings, " "))
+		}
 		if len(s.CombinedOutput) > 0 {
 			solcExecute = append(solcExecute, "--combined-json", strings.Join(s.CombinedOutput, ","))
 		}
 		if len(s.Libraries) > 0 {
 			solcExecute = append(solcExecute, "--libraries", strings.Join(s.Libraries, ","))
-		}
-		if len(s.Remappings) > 0 {
-			solcExecute = append(solcExecute, strings.Join(s.Remappings, " "))
 		}
 		if s.Optimize {
 			solcExecute = append(solcExecute, "--optimize")
