@@ -58,6 +58,7 @@ func RunPackage(do *definitions.Do) error {
 		//do.ContractsPath = filepath.Join(do.Path, "contracts")
 		//}
 	}
+
 	var err error
 	// Load the package if it doesn't exist
 	if do.Package == nil {

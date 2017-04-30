@@ -90,7 +90,7 @@ type RegisterName struct {
 	Name string `mapstructure:"name" yaml:"name"`
 	// (Optional, if data_file is used; otherwise required) data which will be stored at the `name` key
 	Data string `mapstructure:"data" yaml:"data"`
-	// (Optional) csv file in the form (name,data[,amount]) which can be used to bulk register names
+	// (Optional) json file in the form of a multi string mapping: (<data_file>:[name:{data,amount}]) which can be used to bulk register names
 	DataFile string `mapstructure:"data_file" json:"data_file" yaml:"data_file" toml:"data_file"`
 	// (Optional) amount of blocks which the name entry will be reserved for the registering user
 	Amount string `mapstructure:"amount" yaml:"amount"`

@@ -3,6 +3,7 @@ package jobs
 import (
 	//"encoding/json"
 	"strings"
+	"time"
 
 	"github.com/monax/cli/log"
 	"github.com/monax/cli/util"
@@ -35,11 +36,12 @@ type Jobs struct {
 	AbiPath      string `json:"-"`
 	ContractPath string `json:"-"`
 	//Job variables
+	timestamp  time.Time              `json:"time_jobset_started"`
 	Jobs       []*Job                 `mapstructure:"jobs" yaml:"jobs" json:"-"`
-	JobMap     map[string]*JobResults `json:"output"`
-	jobCounter map[int]string
+	JobMap     map[string]*JobResults `json:"-"`
+	jobCounter map[int]string         `json:"-"`
 	//abi map
-	AbiMap map[string]string
+	AbiMap map[string]string `json:"-"`
 }
 
 // Returns an initialized empty jobset
@@ -158,24 +160,18 @@ func checkForDuplicateQueryOverwrite(name string, jobNames []string, defaultOver
 // results based on the format that was requested. Otherwise there will
 // be an error returned via this method, formatted and detailed, that will be returned but not
 // before recording all of the job outputs up to this point.
-func (jobs *Jobs) postProcess(makeOrBreak error) error {
-	switch jobs.OutputFormat {
-	case "csv":
-		log.Info("Writing [epm.csv] to current directory")
-		for _, job := range jobs.Jobs {
-			if err := WriteJobResultCSV(job.JobName, job.JobResult.FullResult.StringResult); err != nil {
-				return err
-			}
-		}
-	case "json":
-		log.Info("Writing [jobs_output.json] to current directory")
-		results := make(map[string]string)
-		for _, job := range do.Package.Jobs {
-			results[job.JobName] = job.JobResult
-		}
-		return WriteJobResultJSON(results)
+func (jobs *Jobs) postProcess() error {
+	log.Info("Writing [jobs_output.json] to current directory")
+	file, err := os.Create(logFile)
+	defer file.Close()
+
+	res, err := json.MarshalIndent(jobs, "", "  ")
+	if err != nil {
+		return err
 	}
-	return WriteJobResultJSON(results, do.DefaultOutput)
+	if _, err = file.Write(res); err != nil {
+		return err
+	}
 
 	return nil
 }

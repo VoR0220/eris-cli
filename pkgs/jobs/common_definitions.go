@@ -68,7 +68,7 @@ type Job struct {
 	// Legacy job field soon to be deprecated
 	Legacy *LegacyJob `mapstructure:"job" yaml:"job"`
 	// Results of the job
-	Results JobResults
+	Results JobResults `json:"results"`
 }
 
 func (job *Job) getType() (JobsRunner, error) {
