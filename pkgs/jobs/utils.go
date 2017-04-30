@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/monax/cli/log"
@@ -144,4 +146,32 @@ func txFinalize(tx txs.Tx, jobs *Jobs, request TxResult) (*JobResults, error) {
 	default:
 		return &JobResults{Type{ret, result.Exception}, nil}, fmt.Errorf(result.Exception)
 	}
+}
+
+func WriteJobResultCSV(name, result string) error {
+
+	pwd, _ := os.Getwd()
+	logFile := filepath.Join(pwd, "jobs_output.csv")
+
+	var file *os.File
+	var err error
+
+	if _, err := os.Stat(logFile); os.IsNotExist(err) {
+		file, err = os.Create(logFile)
+	} else {
+		file, err = os.OpenFile(logFile, os.O_APPEND|os.O_WRONLY, 0600)
+	}
+
+	if err != nil {
+		return err
+	}
+
+	defer file.Close()
+
+	text := fmt.Sprintf("%s,%s\n", name, result)
+	if _, err = file.WriteString(text); err != nil {
+		return err
+	}
+
+	return nil
 }

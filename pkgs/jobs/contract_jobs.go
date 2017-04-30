@@ -198,9 +198,12 @@ func (deploy *Deploy) PreProcess(jobs *Jobs) (err error) {
 	log.Debug("Length of deploy data, ", len(deploy.Data))
 	if len(deploy.Data) != 0 {
 		for i, data := range deploy.Data {
-			if deploy.Data[i], err = preProcessInterface(data, jobs); err != nil {
+			if result, err := preProcessInterface(data, jobs); err != nil {
 				return err
+			} else {
+				deploy.Data[i] = result.StringResult
 			}
+
 		}
 	}
 
@@ -321,7 +324,7 @@ func (deploy *Deploy) Execute(jobs *Jobs) (*JobResults, error) {
 				}
 
 				// format data
-				constructorData, err := abi.FormatAndPackInputs(contractAbi, "", deploy.Data)
+				constructorData, err := abi.Packer(abiSource, "", deploy.Data...)
 				if err != nil {
 					return &JobResults{}, err
 				}
@@ -373,7 +376,7 @@ func (deploy *Deploy) Execute(jobs *Jobs) (*JobResults, error) {
 				}
 
 				// format data
-				constructorData, err := abi.FormatAndPackInputs(contractAbi, "", deploy.Data)
+				constructorData, err := abi.Packer(abiSource, "", deploy.Data)
 				if err != nil {
 					return &JobResults{}, err
 				}
@@ -458,7 +461,7 @@ func (call *Call) PreProcess(jobs *Jobs) (err error) {
 		if dataType, err := preProcessInterface(data, jobs); err != nil {
 			return err
 		} else {
-			call.Data[i] = dataType.ActualResult
+			call.Data[i] = dataType.StringResult
 		}
 	}
 
@@ -523,7 +526,7 @@ func (call *Call) Execute(jobs *Jobs) (*JobResults, error) {
 	}
 	// format data
 	// This seems to be running into problems. For now it may be wise to just use the present day packer.
-	callData, err := abi.FormatAndPackInputs(contractAbi, call.Function, call.Data)
+	callData, err := abi.Packer(abiSource, call.Function, call.Data...)
 	if err != nil {
 		if call.Function == "()" {
 			log.Warn("Calling the fallback function")

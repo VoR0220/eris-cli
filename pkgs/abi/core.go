@@ -19,7 +19,7 @@ import (
 	//"github.com/ethereum/go-ethereum/common/math"
 )
 
-func ReadAbiFormulateCall(abiLocation, funcName, abiPath string, args []string) ([]byte, error) {
+func ReadAbiFormulateCall(abiLocation, funcName, abiPath string, args []interface{}) ([]byte, error) {
 	abiSpecBytes, err := readAbi(abiPath, abiLocation)
 	if err != nil {
 		return []byte{}, err
@@ -85,7 +85,7 @@ func MakeAbi(abiData string) (ethAbi.ABI, error) {
 }
 
 //Convenience Packing Functions
-func Packer(abiData, funcName string, args ...string) ([]byte, error) {
+func Packer(abiData, funcName string, args ...interface{}) ([]byte, error) {
 	abiSpec, err := MakeAbi(abiData)
 	if err != nil {
 		return nil, err
@@ -104,7 +104,7 @@ func Packer(abiData, funcName string, args ...string) ([]byte, error) {
 	return packedBytes, nil
 }
 
-func getPackingTypes(abiSpec ethAbi.ABI, methodName string, args ...string) ([]interface{}, error) {
+func getPackingTypes(abiSpec ethAbi.ABI, methodName string, args ...interface{}) ([]interface{}, error) {
 	var method ethAbi.Method
 	if methodName == "" {
 		method = abiSpec.Constructor
@@ -121,7 +121,7 @@ func getPackingTypes(abiSpec ethAbi.ABI, methodName string, args ...string) ([]i
 	}
 	for i, input := range method.Inputs { //loop through and get string vals packed into proper types
 		inputType := input.Type
-		val, err := packInterfaceValue(inputType, args[i])
+		val, err := packInterfaceValue(inputType, args[i].(string))
 		if err != nil {
 			return nil, err
 		}
