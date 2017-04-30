@@ -15,7 +15,7 @@ const tomlHeader = `# This is a TOML config file.
 // ------------------ services ------------------
 
 var ServiceDefinitions = []string{
-	"solc"
+	"solc",
 	"compilers",
 	"keys",
 	// used by [monax chains start myChain --logrotate]
