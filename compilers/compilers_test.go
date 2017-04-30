@@ -303,7 +303,7 @@ func TestRemappings(t *testing.T) {
 	if err := os.MkdirAll("."+string(filepath.Separator)+"tempDir", 0777); err != nil {
 		t.Fatal(err)
 	}
-	defer os.Remove("./tempDir/")
+	defer os.RemoveAll("." + string(filepath.Separator) + "tempDir")
 	os.Chdir("tempDir")
 	set, err := os.Create("set.sol")
 	if err != nil {
