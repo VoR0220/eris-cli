@@ -74,20 +74,11 @@ func RunPackage(do *definitions.Do) error {
 		}
 	}
 
-	if !do.RemoteCompiler {
-		if err := bootCompiler(); err != nil {
-			return err
-		}
-		if err = getLocalCompilerData(do); err != nil {
-			return err
-		}
-	}
-
 	if len(loadedJobs.DefaultSets) >= 1 {
-		loadedJobs.defaultSetJobs()
+		loadedJobs.DefaultSetJobs()
 	}
 	if loadedJobs.DefaultAddr != "" {
-		loadedJobs.defaultAddrJob()
+		loadedJobs.DefaultAddrJob()
 	}
 
 	return jobs.RunJobs()
@@ -119,46 +110,7 @@ func setChainIPandPort(do *definitions.Do) error {
 	return nil
 }
 
-func bootCompiler() error {
-
-	// add the compilers to the local services if the flag is pushed
-	// [csk] note - when we move to default local compilers we'll remove
-	// the compilers service completely and this will need to get
-	// reworked to utilize DockerRun with a populated service def.
-	doComp := definitions.NowDo()
-	doComp.Name = "compilers"
-	return services.EnsureRunning(doComp)
-}
-
-// getLocalCompilerData populates the IP:port combo for the compilers.
-func getLocalCompilerData(do *definitions.Do) error {
-	// [csk]: note this is brittle we should only expose one port in the
-	// docker file by default for the compilers service we can expose more
-	// forcibly
-	var IPAddress string
-	var err error
-	if runtime.GOOS == "windows" || runtime.GOOS == "darwin" {
-		IPAddress, err = util.DockerWindowsAndMacIP(do)
-		if err != nil {
-			return err
-		}
-	} else {
-		containerName := util.ServiceContainerName("compilers")
-
-		cont, err := util.DockerClient.InspectContainer(containerName)
-		if err != nil {
-			return util.DockerError(err)
-		}
-
-		IPAddress = cont.NetworkSettings.IPAddress
-	}
-
-	do.Compiler = fmt.Sprintf("http://%s:9099", IPAddress)
-	return nil
-}
-
 func printPathPackage(do *definitions.Do) {
-	log.WithField("=>", do.Compiler).Info("Using Compiler at")
 	log.WithField("=>", do.ChainName).Info("Using Chain at")
 	log.WithField("=>", do.ChainID).Debug("With ChainID")
 	log.WithField("=>", do.Signer).Info("Using Signer at")

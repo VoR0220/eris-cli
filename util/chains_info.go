@@ -1,15 +1,12 @@
 package util
 
 import (
-	"encoding/hex"
 	"fmt"
 	"io/ioutil"
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/monax/cli/config"
-	"github.com/monax/cli/definitions"
 	"github.com/monax/cli/log"
 )
 
