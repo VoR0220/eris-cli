@@ -5,21 +5,22 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/big"
-	"reflect"
+	"os"
+	"path"
+	//"reflect"
 	"strconv"
 	"strings"
 
-	"github.com/monax/cli/definitions"
 	"github.com/monax/cli/log"
-	"github.com/monax/cli/util"
+	//"github.com/monax/cli/util"
 
 	ethAbi "github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/math"
+	//"github.com/ethereum/go-ethereum/common/math"
 )
 
-func ReadAbiFormulateCall(abiLocation string, funcName string, args []string, jobs *Jobs) ([]byte, error) {
-	abiSpecBytes, err := readAbi(jobs.ABIPath, abiLocation)
+func ReadAbiFormulateCall(abiLocation, funcName, abiPath string, args []string) ([]byte, error) {
+	abiSpecBytes, err := readAbi(abiPath, abiLocation)
 	if err != nil {
 		return []byte{}, err
 	}
@@ -59,8 +60,8 @@ func stripHex(s string) string {
 	return s
 }
 
-func ReadAndDecodeContractReturn(abiLocation, funcName string, resultRaw []byte, do *definitions.Do) ([]*definitions.Variable, error) {
-	abiSpecBytes, err := readAbi(do.ABIPath, abiLocation)
+/*func ReadAndDecodeContractReturn(abiLocation, abiPath, funcName string, resultRaw []byte) ([]*definitions.Variable, error) {
+	abiSpecBytes, err := readAbi(abiPath, abiLocation)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +69,7 @@ func ReadAndDecodeContractReturn(abiLocation, funcName string, resultRaw []byte,
 
 	// Unpack the result
 	return Unpacker(abiSpecBytes, funcName, resultRaw)
-}
+}*/
 
 func MakeAbi(abiData string) (ethAbi.ABI, error) {
 	if len(abiData) == 0 {
@@ -321,7 +322,7 @@ func packInterfaceValue(typ ethAbi.Type, val string) (interface{}, error) {
 	}
 }
 
-func Unpacker(abiData, name string, data []byte) ([]*definitions.Variable, error) {
+/*func Unpacker(abiData, name string, data []byte) ([]*definitions.Variable, error) {
 
 	abiSpec, err := MakeAbi(abiData)
 	if err != nil {
@@ -473,4 +474,4 @@ func getStringValue(value interface{}, typ ethAbi.Type) (string, error) {
 			return "", fmt.Errorf("Could not unpack value %v", value)
 		}
 	}
-}
+}*/
