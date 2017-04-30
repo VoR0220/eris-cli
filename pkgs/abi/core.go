@@ -421,6 +421,7 @@ func formatUnpackedReturn(abiSpec ethAbi.ABI, methodName string, values ...inter
 	return returnVars, nil
 }
 
+// Use this with the normal unpack to get
 func getStringValue(value interface{}, typ ethAbi.Type) (string, error) {
 
 	if typ.IsSlice || typ.IsArray {

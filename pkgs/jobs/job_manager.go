@@ -53,12 +53,6 @@ func EmptyJobs() *Jobs {
 // checks for overwriting of the results of an old jobset if there is a repeat
 func (jobs *Jobs) RunJobs() (err error) {
 	var jobNames []string
-	if len(jobs.DefaultSets) >= 1 {
-		jobs.defaultSetJobs()
-	}
-	if jobs.DefaultAddr != "" {
-		jobs.defaultAddrJob()
-	}
 	/*
 		defer jobs.postProcess(err)
 	*/
@@ -88,7 +82,7 @@ func (jobs *Jobs) RunJobs() (err error) {
 }
 
 // The default address to work from with future jobs. Placed at the beginning of the jobset.
-func (jobs *Jobs) defaultAddrJob() {
+func (jobs *Jobs) AddDefaultAddrJob() {
 	oldJobs := jobs.Jobs
 
 	newJob := []*Job{
@@ -103,7 +97,7 @@ func (jobs *Jobs) defaultAddrJob() {
 	jobs.Jobs = append(newJob, oldJobs...)
 }
 
-func (jobs *Jobs) defaultSetJobs() {
+func (jobs *Jobs) AddDefaultSetJobs() {
 	oldJobs := jobs.Jobs
 
 	newJobs := []*Job{}

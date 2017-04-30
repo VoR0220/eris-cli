@@ -61,17 +61,15 @@ func RunPackage(do *definitions.Do) error {
 
 	var err error
 	// Load the package if it doesn't exist
-	if do.Package == nil {
-		do.Package, err = loaders.LoadPackage(do.YAMLPath)
-		if err != nil {
-			return err
-		}
+	loadedJobs, err := loaders.LoadJobs(do)
+	if err != nil {
+		return err
 	}
 
 	if do.Path != gotwd {
-		for _, job := range do.Package.Jobs {
-			if job.Job.Deploy != nil {
-				job.Job.Deploy.Contract = filepath.Join(do.Path, job.Job.Deploy.Contract)
+		for _, job := range loadedJobs.Jobs {
+			if job.Deploy != nil {
+				job.Deploy.Contract = filepath.Join(do.Path, job.Job.Deploy.Contract)
 			}
 		}
 	}
@@ -85,7 +83,14 @@ func RunPackage(do *definitions.Do) error {
 		}
 	}
 
-	return jobs.RunJobs(do)
+	if len(loadedJobs.DefaultSets) >= 1 {
+		loadedJobs.defaultSetJobs()
+	}
+	if loadedJobs.DefaultAddr != "" {
+		loadedJobs.defaultAddrJob()
+	}
+
+	return jobs.RunJobs()
 }
 
 func setChainIPandPort(do *definitions.Do) error {

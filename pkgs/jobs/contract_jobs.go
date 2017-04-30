@@ -522,6 +522,7 @@ func (call *Call) Execute(jobs *Jobs) (*JobResults, error) {
 		log.Warn("Calling the fallback function")
 	}
 	// format data
+	// This seems to be running into problems. For now it may be wise to just use the present day packer.
 	callData, err := abi.FormatAndPackInputs(contractAbi, call.Function, call.Data)
 	if err != nil {
 		if call.Function == "()" {
@@ -541,6 +542,8 @@ func (call *Call) Execute(jobs *Jobs) (*JobResults, error) {
 		return &JobResults{}, err
 	}
 
+	// Change CreateBlankSlate to simply return either an interface or a slice of interfaces depending on
+	// the length of the outputs
 	toUnpackInto, method, err := abi.CreateBlankSlate(contractAbi, call.Function)
 	if err != nil {
 		return &JobResults{}, err
