@@ -55,10 +55,18 @@ func RunPackage(do *definitions.Do) error {
 			do.YAMLPath = filepath.Join(do.Path, do.YAMLPath)
 		}
 		if do.BinPath == "./bin" {
+			fmt.Println("HIT")
 			do.BinPath = filepath.Join(do.Path, "bin")
+			if _, err := os.Stat(do.BinPath); os.IsNotExist(err) {
+				os.Mkdir(do.BinPath, 0666)
+			}
 		}
 		if do.ABIPath == "./abi" {
+			fmt.Println("HIT")
 			do.ABIPath = filepath.Join(do.Path, "abi")
+			if _, err := os.Stat(do.ABIPath); os.IsNotExist(err) {
+				os.Mkdir(do.ABIPath, 0666)
+			}
 		}
 		// TODO enable this feature
 		// if do.ContractsPath == "./contracts" {
