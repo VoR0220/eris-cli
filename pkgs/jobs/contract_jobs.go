@@ -324,7 +324,7 @@ func (deploy *Deploy) Execute(jobs *Jobs) (*JobResults, error) {
 				}
 
 				// format data
-				constructorData, err := abi.Packer(abiSource, "", deploy.Data...)
+				constructorData, err := abi.Packer(contractAbi, "", deploy.Data...)
 				if err != nil {
 					return &JobResults{}, err
 				}
@@ -376,7 +376,7 @@ func (deploy *Deploy) Execute(jobs *Jobs) (*JobResults, error) {
 				}
 
 				// format data
-				constructorData, err := abi.Packer(abiSource, "", deploy.Data)
+				constructorData, err := abi.Packer(contractAbi, "", deploy.Data)
 				if err != nil {
 					return &JobResults{}, err
 				}
@@ -504,6 +504,7 @@ func (call *Call) Execute(jobs *Jobs) (*JobResults, error) {
 
 	var namedResults map[string]Type
 	var abiSource string
+
 	if abi, ok := jobs.AbiMap[call.Destination]; !ok {
 		if call.ABI == "" {
 			return &JobResults{}, fmt.Errorf("Couldn't get the needed abi from your job results, can you provide it through the abi field in your call job?")
@@ -526,7 +527,7 @@ func (call *Call) Execute(jobs *Jobs) (*JobResults, error) {
 	}
 	// format data
 	// This seems to be running into problems. For now it may be wise to just use the present day packer.
-	callData, err := abi.Packer(abiSource, call.Function, call.Data...)
+	callData, err := abi.Packer(contractAbi, call.Function, call.Data...)
 	if err != nil {
 		if call.Function == "()" {
 			log.Warn("Calling the fallback function")
@@ -556,18 +557,33 @@ func (call *Call) Execute(jobs *Jobs) (*JobResults, error) {
 		return &JobResults{}, err
 	}
 	// get names of the types, get string results, get actual results, return them.
-	fullStringResults := []string{"("}
+	fullStringResults := []string{}
 	for i, methodOutput := range method.Outputs {
-		strResult, actualResult, err := abi.ConvertUnpackedToJobTypes(toUnpackInto[i], methodOutput.Type)
-		if err != nil {
-			return &JobResults{}, err
-		}
-		fullStringResults = append(fullStringResults, strResult+", ")
 		if methodOutput.Name == "" {
 			methodOutput.Name = strconv.FormatInt(int64(i), 10)
 		}
-		namedResults[methodOutput.Name] = Type{ActualResult: actualResult, StringResult: strResult}
+		var strResult string
+		if unpackedValues, ok := toUnpackInto.([]interface{}); ok {
+			strResult, err = abi.GetStringValue(unpackedValues[i], methodOutput.Type)
+			namedResults[methodOutput.Name] = Type{ActualResult: unpackedValues, StringResult: strResult}
+		} else {
+			if unpackedValues, ok := toUnpackInto.(interface{}); !ok {
+				return &JobResults{}, fmt.Errorf("Unexpected error while converting unpacked values to readable format")
+			} else {
+				strResult, err = abi.GetStringValue(unpackedValues, methodOutput.Type)
+				namedResults[methodOutput.Name] = Type{ActualResult: unpackedValues, StringResult: strResult}
+			}
+		}
+		if err != nil {
+			return &JobResults{}, err
+		}
+		fullStringResults = append(fullStringResults, strResult)
+
 	}
-	fullStringResults = append(fullStringResults, ")")
-	return &JobResults{FullResult: Type{StringResult: strings.Join(fullStringResults, ""), ActualResult: strings.Join(fullStringResults, "")}, NamedResults: namedResults}, nil
+	return &JobResults{
+		FullResult: Type{
+			StringResult: "(" + strings.Join(fullStringResults, ", ") + ")",
+			ActualResult: toUnpackInto},
+		NamedResults: namedResults,
+	}, nil
 }

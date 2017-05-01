@@ -3,11 +3,8 @@ package abi
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"math/big"
-	"os"
-	"path"
-	//"reflect"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -16,10 +13,10 @@ import (
 
 	ethAbi "github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	//"github.com/ethereum/go-ethereum/common/math"
+	"github.com/ethereum/go-ethereum/common/math"
 )
 
-func ReadAbiFormulateCall(abiLocation, funcName, abiPath string, args []interface{}) ([]byte, error) {
+/*func ReadAbiFormulateCall(abiLocation, funcName, abiPath string, args []interface{}) ([]byte, error) {
 	abiSpecBytes, err := readAbi(abiPath, abiLocation)
 	if err != nil {
 		return []byte{}, err
@@ -60,7 +57,7 @@ func stripHex(s string) string {
 	return s
 }
 
-/*func ReadAndDecodeContractReturn(abiLocation, abiPath, funcName string, resultRaw []byte) ([]*definitions.Variable, error) {
+func ReadAndDecodeContractReturn(abiLocation, abiPath, funcName string, resultRaw []byte) ([]*definitions.Variable, error) {
 	abiSpecBytes, err := readAbi(abiPath, abiLocation)
 	if err != nil {
 		return nil, err
@@ -85,11 +82,7 @@ func MakeAbi(abiData string) (ethAbi.ABI, error) {
 }
 
 //Convenience Packing Functions
-func Packer(abiData, funcName string, args ...interface{}) ([]byte, error) {
-	abiSpec, err := MakeAbi(abiData)
-	if err != nil {
-		return nil, err
-	}
+func Packer(abiSpec ethAbi.ABI, funcName string, args ...interface{}) ([]byte, error) {
 
 	packedTypes, err := getPackingTypes(abiSpec, funcName, args...)
 	if err != nil {
@@ -322,57 +315,27 @@ func packInterfaceValue(typ ethAbi.Type, val string) (interface{}, error) {
 	}
 }
 
-/*func Unpacker(abiData, name string, data []byte) ([]*definitions.Variable, error) {
-
-	abiSpec, err := MakeAbi(abiData)
-	if err != nil {
-		return []*definitions.Variable{}, err
-	}
-
-	numArgs, err := numReturns(abiSpec, name)
-	if err != nil {
-		return nil, err
-	}
-
-	if numArgs == 0 {
-		return nil, nil
-	} else if numArgs == 1 {
-		var unpacked interface{}
-		err = abiSpec.Unpack(&unpacked, name, data)
-		if err != nil {
-			return []*definitions.Variable{}, err
-		}
-		return formatUnpackedReturn(abiSpec, name, unpacked)
-	} else {
-		var unpacked []interface{}
-		err = abiSpec.Unpack(&unpacked, name, data)
-		if err != nil {
-			return []*definitions.Variable{}, err
-		}
-		return formatUnpackedReturn(abiSpec, name, unpacked)
-	}
-
-}
-
-func numReturns(abiSpec ethAbi.ABI, methodName string) (uint, error) {
+func CreateBlankSlate(abiSpec ethAbi.ABI, methodName string) (interface{}, ethAbi.Method, error) {
 	method, exist := abiSpec.Methods[methodName]
 	if !exist {
 		if methodName == "()" {
-			return 0, nil
+			return nil, ethAbi.Method{}, nil
 		}
-		return 0, fmt.Errorf("method '%s' not found", methodName)
+		return nil, ethAbi.Method{}, fmt.Errorf("method '%s' not found", methodName)
 	}
 	if len(method.Outputs) == 0 {
 		log.Debug("Empty output, nothing to interface to")
-		return 0, nil
+		return nil, method, nil
 	} else if len(method.Outputs) == 1 {
-		return 1, nil
+		var unpacked interface{}
+		return unpacked, method, nil
 	} else {
-		return 2, nil
+		var unpacked []interface{}
+		return unpacked, method, nil
 	}
 }
 
-func formatUnpackedReturn(abiSpec ethAbi.ABI, methodName string, values ...interface{}) ([]*definitions.Variable, error) {
+/*func formatUnpackedReturn(abiSpec ethAbi.ABI, methodName string, values ...interface{}) ([]*, error) {
 	var returnVars []*definitions.Variable
 	method, exist := abiSpec.Methods[methodName]
 	if !exist {
@@ -420,13 +383,12 @@ func formatUnpackedReturn(abiSpec ethAbi.ABI, methodName string, values ...inter
 		returnVars = append(returnVars, returnVar)
 	}
 	return returnVars, nil
-}
+}*/
 
-// Use this with the normal unpack to get
-func getStringValue(value interface{}, typ ethAbi.Type) (string, error) {
+func GetStringValue(value interface{}, typ ethAbi.Type) (string, error) {
 
 	if typ.IsSlice || typ.IsArray {
-		if typ.T == ethAbi.BytesTy || typ.T == ethAbi.FixedBytesTy {
+		if typ.T == ethAbi.BytesTy || typ.T == ethAbi.FixedBytesTy || typ.T == ethAbi.FunctionTy {
 			return string(bytes.Trim(value.([]byte), "\x00")[:]), nil
 		}
 		var val []string
@@ -438,7 +400,7 @@ func getStringValue(value interface{}, typ ethAbi.Type) (string, error) {
 		} else {
 			values := reflect.ValueOf(value)
 			for i := 0; i < typ.SliceSize; i++ {
-				underlyingValue, err := getStringValue(values.Index(i).Interface(), *typ.Elem)
+				underlyingValue, err := GetStringValue(values.Index(i).Interface(), *typ.Elem)
 				if err != nil {
 					return "", err
 				}
@@ -474,4 +436,4 @@ func getStringValue(value interface{}, typ ethAbi.Type) (string, error) {
 			return "", fmt.Errorf("Could not unpack value %v", value)
 		}
 	}
-}*/
+}

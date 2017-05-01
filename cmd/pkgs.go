@@ -3,12 +3,9 @@ package commands
 import (
 	"fmt"
 	"runtime"
-	"strconv"
-	"strings"
 
 	"github.com/monax/cli/pkgs"
 	"github.com/monax/cli/util"
-	"github.com/monax/cli/version"
 
 	"github.com/spf13/cobra"
 )

@@ -9,9 +9,10 @@ import (
 	"github.com/monax/cli/definitions"
 	"github.com/monax/cli/loaders"
 	"github.com/monax/cli/log"
-	"github.com/monax/cli/pkgs/jobs"
-	"github.com/monax/cli/services"
 	"github.com/monax/cli/util"
+
+	"github.com/hyperledger/burrow/client"
+	"github.com/hyperledger/burrow/logging/loggers"
 )
 
 func RunPackage(do *definitions.Do) error {
@@ -25,18 +26,24 @@ func RunPackage(do *definitions.Do) error {
 		do.Path = gotwd
 	}
 
-	// useful for debugging
-	printPathPackage(do)
-
 	// sets do.ChainIP and do.ChainPort
 	if err := setChainIPandPort(do); err != nil {
 		return err
 	}
 
 	do.ChainURL = fmt.Sprintf("tcp://%s:%s", do.ChainIP, do.ChainPort)
-	if err := util.GetChainID(do); err != nil {
-		return err
+
+	if do.ChainID == "" {
+		nodeClient := client.NewBurrowNodeClient(do.ChainURL, loggers.NewNoopInfoTraceLogger())
+		_, chainId, _, err := nodeClient.ChainId()
+		if err != nil {
+			return err
+		}
+		do.ChainID = chainId
 	}
+
+	// useful for debugging
+	printPathPackage(do)
 
 	// if --dir is used and --file is left default, concat
 	// so that the job will run
@@ -69,19 +76,19 @@ func RunPackage(do *definitions.Do) error {
 	if do.Path != gotwd {
 		for _, job := range loadedJobs.Jobs {
 			if job.Deploy != nil {
-				job.Deploy.Contract = filepath.Join(do.Path, job.Job.Deploy.Contract)
+				job.Deploy.Contract = filepath.Join(do.Path, job.Deploy.Contract)
 			}
 		}
 	}
 
 	if len(loadedJobs.DefaultSets) >= 1 {
-		loadedJobs.DefaultSetJobs()
+		loadedJobs.AddDefaultSetJobs()
 	}
 	if loadedJobs.DefaultAddr != "" {
-		loadedJobs.DefaultAddrJob()
+		loadedJobs.AddDefaultAddrJob()
 	}
 
-	return jobs.RunJobs()
+	return loadedJobs.RunJobs()
 }
 
 func setChainIPandPort(do *definitions.Do) error {

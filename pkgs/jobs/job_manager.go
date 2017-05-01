@@ -157,7 +157,7 @@ func checkForDuplicateQueryOverwrite(name string, jobNames []string, defaultOver
 // before recording all of the job outputs up to this point.
 func (jobs *Jobs) postProcess() error {
 	log.Info("Writing [jobs_output.json] to current directory")
-	file, err := os.Create(logFile)
+	file, err := os.Create("jobs_output.json")
 	defer file.Close()
 
 	res, err := json.MarshalIndent(jobs, "", "  ")
