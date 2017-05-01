@@ -16,57 +16,24 @@ import (
 	"github.com/ethereum/go-ethereum/common/math"
 )
 
-/*func ReadAbiFormulateCall(abiLocation, funcName, abiPath string, args []interface{}) ([]byte, error) {
-	abiSpecBytes, err := readAbi(abiPath, abiLocation)
+func ReadAbiFormulateCall(abiSource, funcName string, args ...interface{}) (ethAbi.ABI, []byte, error) {
+	contractAbi, err := MakeAbi(abiSource)
 	if err != nil {
-		return []byte{}, err
-	}
-	log.WithField("=>", string(abiSpecBytes)).Debug("ABI Specification (Formulate)")
-	log.WithFields(log.Fields{
-		"function":  funcName,
-		"arguments": fmt.Sprintf("%v", args),
-	}).Debug("Packing Call via ABI")
-
-	return Packer(abiSpecBytes, funcName, args...)
-}
-
-func readAbi(root, contract string) (string, error) {
-	p := path.Join(root, stripHex(contract))
-	if _, err := os.Stat(p); err != nil {
-		return "", fmt.Errorf("Abi doesn't exist for =>\t%s", p)
+		return ethAbi.ABI{}, nil, err
 	}
 
-	b, err := ioutil.ReadFile(p)
+	log.Debug("LEN OF ARGS", len(args))
+	if len(args) == 0 {
+		return contractAbi, nil, nil
+	}
+	// format data
+	inputs, err := Packer(contractAbi, funcName, args...)
 	if err != nil {
-		return "", err
+		return ethAbi.ABI{}, nil, err
 	}
 
-	return string(b), nil
+	return contractAbi, inputs, nil
 }
-
-func stripHex(s string) string {
-	if len(s) > 1 {
-		if s[:2] == "0x" {
-			s = s[2:]
-			if len(s)%2 != 0 {
-				s = "0" + s
-			}
-			return s
-		}
-	}
-	return s
-}
-
-func ReadAndDecodeContractReturn(abiLocation, abiPath, funcName string, resultRaw []byte) ([]*definitions.Variable, error) {
-	abiSpecBytes, err := readAbi(abiPath, abiLocation)
-	if err != nil {
-		return nil, err
-	}
-	log.WithField("=>", abiSpecBytes).Debug("ABI Specification (Decode)")
-
-	// Unpack the result
-	return Unpacker(abiSpecBytes, funcName, resultRaw)
-}*/
 
 func MakeAbi(abiData string) (ethAbi.ABI, error) {
 	if len(abiData) == 0 {

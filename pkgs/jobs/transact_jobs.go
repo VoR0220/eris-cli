@@ -289,13 +289,13 @@ func (perm *Permission) Execute(jobs *Jobs) (*JobResults, error) {
 	// Populate the transaction appropriately
 	var args []string
 	switch perm.Action {
-	case "set_global":
+	case "setGlobal":
 		args = []string{perm.PermissionFlag, perm.Value}
-	case "set_base":
+	case "setBase":
 		args = []string{perm.Target, perm.PermissionFlag, perm.Value}
-	case "unset_base":
+	case "unsetBase":
 		args = []string{perm.Target, perm.PermissionFlag}
-	case "add_role", "rm_role":
+	case "addRole", "removeRole":
 		args = []string{perm.Target, perm.Role}
 	}
 

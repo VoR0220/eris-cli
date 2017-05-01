@@ -6,12 +6,16 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/monax/cli/log"
+	"github.com/monax/cli/pkgs/abi"
 
 	"github.com/hyperledger/burrow/client/rpc"
 	"github.com/hyperledger/burrow/txs"
+
+	ethAbi "github.com/ethereum/go-ethereum/accounts/abi"
 )
 
 //preprocesses an interface type into a type type
@@ -146,6 +150,49 @@ func txFinalize(tx txs.Tx, jobs *Jobs, request TxResult) (*JobResults, error) {
 	default:
 		return &JobResults{Type{ret, result.Exception}, nil}, fmt.Errorf(result.Exception)
 	}
+}
+
+func Unpacker(contractAbi ethAbi.ABI, funcName string, output []byte) (*JobResults, error) {
+	var namedResults map[string]Type
+	// Create blank slate of whether we are looking to use an interface or an []interface{}
+	toUnpackInto, method, err := abi.CreateBlankSlate(contractAbi, funcName)
+	if err != nil {
+		return &JobResults{}, err
+	}
+	err = contractAbi.Unpack(&toUnpackInto, funcName, output)
+	if err != nil {
+		return &JobResults{}, err
+	}
+	// get names of the types, get string results, get actual results, return them.
+	fullStringResults := []string{}
+	for i, methodOutput := range method.Outputs {
+		if methodOutput.Name == "" {
+			methodOutput.Name = strconv.FormatInt(int64(i), 10)
+		}
+		var strResult string
+		if unpackedValues, ok := toUnpackInto.([]interface{}); ok {
+			strResult, err = abi.GetStringValue(unpackedValues[i], methodOutput.Type)
+			namedResults[methodOutput.Name] = Type{ActualResult: unpackedValues, StringResult: strResult}
+		} else {
+			if unpackedValues, ok := toUnpackInto.(interface{}); !ok {
+				return &JobResults{}, fmt.Errorf("Unexpected error while converting unpacked values to readable format")
+			} else {
+				strResult, err = abi.GetStringValue(unpackedValues, methodOutput.Type)
+				namedResults[methodOutput.Name] = Type{ActualResult: unpackedValues, StringResult: strResult}
+			}
+		}
+		if err != nil {
+			return &JobResults{}, err
+		}
+		fullStringResults = append(fullStringResults, strResult)
+
+	}
+	return &JobResults{
+		FullResult: Type{
+			StringResult: "(" + strings.Join(fullStringResults, ", ") + ")",
+			ActualResult: toUnpackInto},
+		NamedResults: namedResults,
+	}, nil
 }
 
 func WriteJobResultCSV(name, result string) error {

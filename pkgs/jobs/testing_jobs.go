@@ -66,7 +66,6 @@ func (qContract *QueryContract) PreProcess(jobs *Jobs) (err error) {
 }
 
 func (qContract *QueryContract) Execute(jobs *Jobs) (*JobResults, error) {
-	var namedResults map[string]Type
 	var abiSource string
 	if abi, ok := jobs.AbiMap[qContract.Destination]; !ok {
 		if qContract.ABI == "" {
@@ -80,17 +79,7 @@ func (qContract *QueryContract) Execute(jobs *Jobs) (*JobResults, error) {
 		abiSource = abi
 	}
 
-	contractAbi, err := abi.MakeAbi(abiSource)
-	if err != nil {
-		return &JobResults{}, err
-	}
-
-	if qContract.Function == "()" {
-		log.Warn("Calling the fallback function")
-	}
-	// format data
-	// This seems to be running into problems. For now it may be wise to just use the present day packer.
-	callData, err := abi.Packer(contractAbi, qContract.Function, qContract.Data...)
+	contractAbi, callData, err := abi.ReadAbiFormulateCall(abiSource, qContract.Function, qContract.Data)
 	if err != nil {
 		if qContract.Function == "()" {
 			log.Warn("Calling the fallback function")
@@ -115,47 +104,7 @@ func (qContract *QueryContract) Execute(jobs *Jobs) (*JobResults, error) {
 		return &JobResults{}, err
 	}
 
-	// Change CreateBlankSlate to simply return either an interface or a slice of interfaces depending on
-	// the length of the outputs
-	toUnpackInto, method, err := abi.CreateBlankSlate(contractAbi, qContract.Function)
-	if err != nil {
-		return &JobResults{}, err
-	}
-	err = contractAbi.Unpack(&toUnpackInto, qContract.Function, result)
-	if err != nil {
-		return &JobResults{}, err
-	}
-	// get names of the types, get string results, get actual results, return them.
-	fullStringResults := []string{}
-	for i, methodOutput := range method.Outputs {
-		if methodOutput.Name == "" {
-			methodOutput.Name = strconv.FormatInt(int64(i), 10)
-		}
-		var strResult string
-		if unpackedValues, ok := toUnpackInto.([]interface{}); ok {
-			strResult, err = abi.GetStringValue(unpackedValues[i], methodOutput.Type)
-			namedResults[methodOutput.Name] = Type{ActualResult: unpackedValues, StringResult: strResult}
-		} else {
-			if unpackedValues, ok := toUnpackInto.(interface{}); !ok {
-				return &JobResults{}, fmt.Errorf("Unexpected error while converting unpacked values to readable format")
-			} else {
-				strResult, err = abi.GetStringValue(unpackedValues, methodOutput.Type)
-				namedResults[methodOutput.Name] = Type{ActualResult: unpackedValues, StringResult: strResult}
-			}
-		}
-		if err != nil {
-			return &JobResults{}, err
-		}
-		fullStringResults = append(fullStringResults, strResult)
-
-	}
-	return &JobResults{
-		FullResult: Type{
-			StringResult: "(" + strings.Join(fullStringResults, ", ") + ")",
-			ActualResult: toUnpackInto},
-		NamedResults: namedResults,
-	}, nil
-
+	return Unpacker(contractAbi, qContract.Function, result)
 }
 
 type QueryAccount struct {

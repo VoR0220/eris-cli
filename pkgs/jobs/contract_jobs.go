@@ -8,8 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"strconv"
-	"strings"
 
 	"github.com/monax/cli/compilers"
 	"github.com/monax/cli/log"
@@ -89,11 +87,19 @@ func (compile *Compile) Execute(jobs *Jobs) (*JobResults, error) {
 				return &JobResults{}, err
 			}
 			// while we're here, let's write these abis and bins to their directories
-			if err := ioutil.WriteFile(filepath.Join(jobs.AbiPath, objectName+".abi"), []byte(result.Abi), 0664); err != nil {
+			if abiPath, err := filepath.Abs(filepath.Join(jobs.AbiPath, objectName+".abi")); err == nil {
+				if err = ioutil.WriteFile(abiPath, []byte(result.Abi), 0777); err != nil {
+					return &JobResults{}, fmt.Errorf("Could not write to file in abi path: %v", err)
+				}
+			} else {
 				return &JobResults{}, fmt.Errorf("Could not write to file in abi path: %v", err)
 			}
 
-			if err := ioutil.WriteFile(filepath.Join(jobs.BinPath, objectName+".bin"), []byte(result.Bin), 0664); err != nil {
+			if binPath, err := filepath.Abs(filepath.Join(jobs.BinPath, objectName+".abi")); err == nil {
+				if err = ioutil.WriteFile(binPath, []byte(result.Bin), 0777); err != nil {
+					return &JobResults{}, fmt.Errorf("Could not write to file in bin path: %v", err)
+				}
+			} else {
 				return &JobResults{}, fmt.Errorf("Could not write to file in bin path: %v", err)
 			}
 
@@ -197,6 +203,7 @@ func (deploy *Deploy) PreProcess(jobs *Jobs) (err error) {
 
 	log.Debug("Length of deploy data, ", len(deploy.Data))
 	if len(deploy.Data) != 0 {
+		log.Debug("Preprocessing data")
 		for i, data := range deploy.Data {
 			if result, err := preProcessInterface(data, jobs); err != nil {
 				return err
@@ -308,7 +315,7 @@ func (deploy *Deploy) Execute(jobs *Jobs) (*JobResults, error) {
 				if binary == nil {
 					continue
 				}
-				log.Warn("Deploying contract: ", name, contract)
+				log.Warn("Deploying contract: ", name)
 				// create ABI
 				var abiSource string
 				if deploy.ABI == "" && solcItem.Abi == "" && filepath.Ext(deploy.Contract) != ".bin" {
@@ -318,16 +325,13 @@ func (deploy *Deploy) Execute(jobs *Jobs) (*JobResults, error) {
 				} else {
 					abiSource = solcItem.Abi
 				}
-				contractAbi, err := abi.MakeAbi(abiSource)
+
+				log.Debug("LEN OF ARGS BEFORE GOING IN: ", len(deploy.Data))
+				contractAbi, constructorData, err := abi.ReadAbiFormulateCall(abiSource, "", deploy.Data...)
 				if err != nil {
 					return &JobResults{}, err
 				}
 
-				// format data
-				constructorData, err := abi.Packer(contractAbi, "", deploy.Data...)
-				if err != nil {
-					return &JobResults{}, err
-				}
 				// append to binary
 				contractCode := fmt.Sprintf("%X", append(binary, constructorData...))
 				// call to deploy binary
@@ -346,7 +350,10 @@ func (deploy *Deploy) Execute(jobs *Jobs) (*JobResults, error) {
 				jobs.AbiMap[result.FullResult.StringResult] = abiSource
 				// store the functions of said contract in a named result (address + function signature) in the format name.function->function sig
 				for methodName, method := range contractAbi.Methods {
-					namedResults[name+"."+methodName] = Type{ActualResult: append(result.FullResult.ActualResult.([]byte), method.Id()...), StringResult: string(append(result.FullResult.ActualResult.([]byte), method.Id()...))}
+					namedResults[name+"."+methodName] = Type{
+						ActualResult: append(result.FullResult.ActualResult.([]byte), method.Id()...),
+						StringResult: string(append(result.FullResult.ActualResult.([]byte), method.Id()...)),
+					}
 				}
 			}
 			// breaking change... if instance isn't specified, then you need to call your destination by the contract name that you're talking to.
@@ -370,16 +377,12 @@ func (deploy *Deploy) Execute(jobs *Jobs) (*JobResults, error) {
 				} else {
 					abiSource = solcItem.Abi
 				}
-				contractAbi, err := abi.MakeAbi(abiSource)
+
+				contractAbi, constructorData, err := abi.ReadAbiFormulateCall(abiSource, "", deploy.Data)
 				if err != nil {
 					return &JobResults{}, err
 				}
 
-				// format data
-				constructorData, err := abi.Packer(contractAbi, "", deploy.Data)
-				if err != nil {
-					return &JobResults{}, err
-				}
 				// append to binary
 				contractCode := fmt.Sprintf("%X", append(binary, constructorData...))
 				// call to deploy binary
@@ -502,7 +505,6 @@ func (call *Call) PreProcess(jobs *Jobs) (err error) {
 
 func (call *Call) Execute(jobs *Jobs) (*JobResults, error) {
 
-	var namedResults map[string]Type
 	var abiSource string
 
 	if abi, ok := jobs.AbiMap[call.Destination]; !ok {
@@ -517,17 +519,7 @@ func (call *Call) Execute(jobs *Jobs) (*JobResults, error) {
 		abiSource = abi
 	}
 
-	contractAbi, err := abi.MakeAbi(abiSource)
-	if err != nil {
-		return &JobResults{}, err
-	}
-
-	if call.Function == "()" {
-		log.Warn("Calling the fallback function")
-	}
-	// format data
-	// This seems to be running into problems. For now it may be wise to just use the present day packer.
-	callData, err := abi.Packer(contractAbi, call.Function, call.Data...)
+	contractAbi, callData, err := abi.ReadAbiFormulateCall(abiSource, call.Function, call.Data)
 	if err != nil {
 		if call.Function == "()" {
 			log.Warn("Calling the fallback function")
@@ -546,44 +538,5 @@ func (call *Call) Execute(jobs *Jobs) (*JobResults, error) {
 		return &JobResults{}, err
 	}
 
-	// Change CreateBlankSlate to simply return either an interface or a slice of interfaces depending on
-	// the length of the outputs
-	toUnpackInto, method, err := abi.CreateBlankSlate(contractAbi, call.Function)
-	if err != nil {
-		return &JobResults{}, err
-	}
-	err = contractAbi.Unpack(&toUnpackInto, call.Function, result.FullResult.ActualResult.([]byte))
-	if err != nil {
-		return &JobResults{}, err
-	}
-	// get names of the types, get string results, get actual results, return them.
-	fullStringResults := []string{}
-	for i, methodOutput := range method.Outputs {
-		if methodOutput.Name == "" {
-			methodOutput.Name = strconv.FormatInt(int64(i), 10)
-		}
-		var strResult string
-		if unpackedValues, ok := toUnpackInto.([]interface{}); ok {
-			strResult, err = abi.GetStringValue(unpackedValues[i], methodOutput.Type)
-			namedResults[methodOutput.Name] = Type{ActualResult: unpackedValues, StringResult: strResult}
-		} else {
-			if unpackedValues, ok := toUnpackInto.(interface{}); !ok {
-				return &JobResults{}, fmt.Errorf("Unexpected error while converting unpacked values to readable format")
-			} else {
-				strResult, err = abi.GetStringValue(unpackedValues, methodOutput.Type)
-				namedResults[methodOutput.Name] = Type{ActualResult: unpackedValues, StringResult: strResult}
-			}
-		}
-		if err != nil {
-			return &JobResults{}, err
-		}
-		fullStringResults = append(fullStringResults, strResult)
-
-	}
-	return &JobResults{
-		FullResult: Type{
-			StringResult: "(" + strings.Join(fullStringResults, ", ") + ")",
-			ActualResult: toUnpackInto},
-		NamedResults: namedResults,
-	}, nil
+	return Unpacker(contractAbi, call.Function, result.FullResult.ActualResult.([]byte))
 }
