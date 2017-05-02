@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/monax/cli/log"
 	"github.com/monax/cli/util"
@@ -16,6 +17,10 @@ import (
 // via the service definition file
 func ExecuteCompilerCommand(image string, command []string) ([]byte, error) {
 	pwd, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+	pwd, err = filepath.Abs(pwd)
 	if err != nil {
 		return nil, err
 	}

@@ -95,7 +95,7 @@ func (compile *Compile) Execute(jobs *Jobs) (*JobResults, error) {
 				return &JobResults{}, fmt.Errorf("Could not write to file in abi path: %v", err)
 			}
 
-			if binPath, err := filepath.Abs(filepath.Join(jobs.BinPath, objectName+".abi")); err == nil {
+			if binPath, err := filepath.Abs(filepath.Join(jobs.BinPath, objectName+".bin")); err == nil {
 				if err = ioutil.WriteFile(binPath, []byte(result.Bin), 0777); err != nil {
 					return &JobResults{}, fmt.Errorf("Could not write to file in bin path: %v", err)
 				}
@@ -242,6 +242,10 @@ func (deploy *Deploy) PreProcess(jobs *Jobs) (err error) {
 		return err
 	}
 
+	// You might think we need skip this if this is a bin file
+	// However, if there are library tags in the binary, then we need
+	// to link them, hence why we are still sending it through the compiler
+	// where that is handled.
 	deploy.compilerResults, err = deploy.compiler.Execute(jobs)
 	if err != nil {
 		return fmt.Errorf("Problem during compilation: %v", err)
@@ -326,7 +330,6 @@ func (deploy *Deploy) Execute(jobs *Jobs) (*JobResults, error) {
 					abiSource = solcItem.Abi
 				}
 
-				log.Debug("LEN OF ARGS BEFORE GOING IN: ", len(deploy.Data))
 				contractAbi, constructorData, err := abi.ReadAbiFormulateCall(abiSource, "", deploy.Data...)
 				if err != nil {
 					return &JobResults{}, err
@@ -400,7 +403,10 @@ func (deploy *Deploy) Execute(jobs *Jobs) (*JobResults, error) {
 				jobs.AbiMap[result.FullResult.StringResult] = abiSource
 				// store the functions of said contract in a named result (address + function signature) in the format function->function sig
 				for methodName, method := range contractAbi.Methods {
-					namedResults[methodName] = Type{ActualResult: append(result.FullResult.ActualResult.([]byte), method.Id()...), StringResult: string(append(result.FullResult.ActualResult.([]byte), method.Id()...))}
+					namedResults[methodName] = Type{
+						ActualResult: append(result.FullResult.ActualResult.([]byte), method.Id()...),
+						StringResult: string(append(result.FullResult.ActualResult.([]byte), method.Id()...)),
+					}
 				}
 				// store the base result
 				return &JobResults{FullResult: result.FullResult, NamedResults: namedResults}, nil
@@ -455,6 +461,9 @@ func (call *Call) PreProcess(jobs *Jobs) (err error) {
 	if err != nil {
 		return err
 	}
+
+	log.Debug("DESTINATION: ", call.Destination)
+
 	call.Function, _, err = preProcessString(call.Function, jobs)
 	if err != nil {
 		return err
@@ -474,6 +483,8 @@ func (call *Call) PreProcess(jobs *Jobs) (err error) {
 			return err
 		}
 		call.ABI = string(buf)
+	} else {
+		call.ABI = jobs.AbiMap[call.Destination]
 	}
 
 	call.Amount, _, err = preProcessString(call.Amount, jobs)
@@ -518,6 +529,8 @@ func (call *Call) Execute(jobs *Jobs) (*JobResults, error) {
 	} else {
 		abiSource = abi
 	}
+
+	log.Debug("ABI SOURCE: ", abiSource)
 
 	contractAbi, callData, err := abi.ReadAbiFormulateCall(abiSource, call.Function, call.Data)
 	if err != nil {

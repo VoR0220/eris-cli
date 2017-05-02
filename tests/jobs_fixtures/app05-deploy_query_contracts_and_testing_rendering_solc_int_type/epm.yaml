@@ -10,7 +10,7 @@ jobs:
 
 - name: setStorage
   call:
-      destination: $deployStorageK
+      destination: $deployStorageK.storage.sol:Storage
       function: set
       data:
         - $setStorageBase

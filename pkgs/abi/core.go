@@ -22,7 +22,6 @@ func ReadAbiFormulateCall(abiSource, funcName string, args ...interface{}) (ethA
 		return ethAbi.ABI{}, nil, err
 	}
 
-	log.Debug("LEN OF ARGS", len(args))
 	if len(args) == 0 {
 		return contractAbi, nil, nil
 	}
@@ -51,7 +50,7 @@ func MakeAbi(abiData string) (ethAbi.ABI, error) {
 //Convenience Packing Functions
 func Packer(abiSpec ethAbi.ABI, funcName string, args ...interface{}) ([]byte, error) {
 
-	packedTypes, err := getPackingTypes(abiSpec, funcName, args...)
+	packedTypes, err := getPackingTypes(abiSpec, funcName, args)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +63,7 @@ func Packer(abiSpec ethAbi.ABI, funcName string, args ...interface{}) ([]byte, e
 	return packedBytes, nil
 }
 
-func getPackingTypes(abiSpec ethAbi.ABI, methodName string, args ...interface{}) ([]interface{}, error) {
+func getPackingTypes(abiSpec ethAbi.ABI, methodName string, args []interface{}) ([]interface{}, error) {
 	var method ethAbi.Method
 	if methodName == "" {
 		method = abiSpec.Constructor

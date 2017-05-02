@@ -45,48 +45,28 @@ func RunPackage(do *definitions.Do) error {
 	// useful for debugging
 	printPathPackage(do)
 
-	// if --dir is used and --file is left default, concat
-	// so that the job will run
-	// note: [zr] this could be problematic with a combo of
-	// other flags, however, at least the --dir flag isn't
-	// completely broken now
-	if do.Path != gotwd {
-		if do.YAMLPath == "epm.yaml" {
-			do.YAMLPath = filepath.Join(do.Path, do.YAMLPath)
+	do.YAMLPath = filepath.Join(do.Path, do.YAMLPath)
+
+	do.BinPath = filepath.Join(do.Path, do.BinPath)
+	if _, err := os.Stat(do.BinPath); os.IsNotExist(err) {
+		err = os.Mkdir(do.BinPath, 0777)
+		if err != nil {
+			return err
 		}
-		if do.BinPath == "./bin" {
-			fmt.Println("HIT")
-			do.BinPath = filepath.Join(do.Path, "bin")
-			if _, err := os.Stat(do.BinPath); os.IsNotExist(err) {
-				os.Mkdir(do.BinPath, 0666)
-			}
-		}
-		if do.ABIPath == "./abi" {
-			fmt.Println("HIT")
-			do.ABIPath = filepath.Join(do.Path, "abi")
-			if _, err := os.Stat(do.ABIPath); os.IsNotExist(err) {
-				os.Mkdir(do.ABIPath, 0666)
-			}
-		}
-		// TODO enable this feature
-		// if do.ContractsPath == "./contracts" {
-		//do.ContractsPath = filepath.Join(do.Path, "contracts")
-		//}
 	}
 
-	var err error
+	do.ABIPath = filepath.Join(do.Path, do.ABIPath)
+	if _, err := os.Stat(do.ABIPath); os.IsNotExist(err) {
+		err = os.Mkdir(do.ABIPath, 0777)
+		if err != nil {
+			return err
+		}
+	}
+
 	// Load the package if it doesn't exist
 	loadedJobs, err := loaders.LoadJobs(do)
 	if err != nil {
 		return err
-	}
-
-	if do.Path != gotwd {
-		for _, job := range loadedJobs.Jobs {
-			if job.Deploy != nil {
-				job.Deploy.Contract = filepath.Join(do.Path, job.Deploy.Contract)
-			}
-		}
 	}
 
 	if len(loadedJobs.DefaultSets) >= 1 {
