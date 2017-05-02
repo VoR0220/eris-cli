@@ -63,7 +63,7 @@ func Packer(abiSpec ethAbi.ABI, funcName string, args ...interface{}) ([]byte, e
 	return packedBytes, nil
 }
 
-func getPackingTypes(abiSpec ethAbi.ABI, methodName string, args []interface{}) ([]interface{}, error) {
+func getPackingTypes(abiSpec ethAbi.ABI, methodName string, args ...interface{}) ([]interface{}, error) {
 	var method ethAbi.Method
 	if methodName == "" {
 		method = abiSpec.Constructor
@@ -74,13 +74,19 @@ func getPackingTypes(abiSpec ethAbi.ABI, methodName string, args []interface{}) 
 			return nil, fmt.Errorf("method '%s' not found", methodName)
 		}
 	}
+
 	var values []interface{}
 	if len(args) != len(method.Inputs) {
 		return nil, fmt.Errorf("Invalid number of arguments asked to be packed, expected %v, got %v", len(method.Inputs), len(args))
 	}
 	for i, input := range method.Inputs { //loop through and get string vals packed into proper types
 		inputType := input.Type
-		val, err := packInterfaceValue(inputType, args[i].(string))
+		fmt.Printf("%v for input %v\n", args[i], i)
+		_, ok := args[i].([]interface{})[i].(string)
+		if !ok {
+			return nil, fmt.Errorf("Hey it didn't worked when turned into a string")
+		}
+		val, err := packInterfaceValue(inputType, args[i].([]interface{})[i].(string))
 		if err != nil {
 			return nil, err
 		}

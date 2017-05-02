@@ -153,7 +153,10 @@ func txFinalize(tx txs.Tx, jobs *Jobs, request TxResult) (*JobResults, error) {
 }
 
 func Unpacker(contractAbi ethAbi.ABI, funcName string, output []byte) (*JobResults, error) {
-	var namedResults map[string]Type
+	if output == nil {
+		return &JobResults{}, nil
+	}
+	namedResults := make(map[string]Type)
 	// Create blank slate of whether we are looking to use an interface or an []interface{}
 	toUnpackInto, method, err := abi.CreateBlankSlate(contractAbi, funcName)
 	if err != nil {

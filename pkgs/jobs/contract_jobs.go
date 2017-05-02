@@ -532,7 +532,7 @@ func (call *Call) Execute(jobs *Jobs) (*JobResults, error) {
 
 	log.Debug("ABI SOURCE: ", abiSource)
 
-	contractAbi, callData, err := abi.ReadAbiFormulateCall(abiSource, call.Function, call.Data)
+	contractAbi, callData, err := abi.ReadAbiFormulateCall(abiSource, call.Function, call.Data...)
 	if err != nil {
 		if call.Function == "()" {
 			log.Warn("Calling the fallback function")
