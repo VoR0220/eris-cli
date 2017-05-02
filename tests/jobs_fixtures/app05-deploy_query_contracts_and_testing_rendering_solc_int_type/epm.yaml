@@ -17,7 +17,7 @@ jobs:
 
 - name: queryStorage
   query-contract:
-      destination: $deployStorageK
+      destination: $deployStorageK.storage.sol:Storage
       function: get
 
 - name: assertStorage

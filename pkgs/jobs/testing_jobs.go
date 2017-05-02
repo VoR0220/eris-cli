@@ -57,11 +57,15 @@ func (qContract *QueryContract) PreProcess(jobs *Jobs) (err error) {
 			return err
 		}
 	}
-	buf, err := ioutil.ReadFile(filepath.Join(jobs.AbiPath, qContract.ABI))
-	if err != nil {
-		return err
+	if qContract.ABI != "" {
+		buf, err := ioutil.ReadFile(filepath.Join(jobs.AbiPath, qContract.ABI))
+		if err != nil {
+			return err
+		}
+		qContract.ABI = string(buf)
+	} else {
+		qContract.ABI = jobs.AbiMap[qContract.Destination]
 	}
-	qContract.ABI = string(buf)
 	return
 }
 
@@ -79,7 +83,7 @@ func (qContract *QueryContract) Execute(jobs *Jobs) (*JobResults, error) {
 		abiSource = abi
 	}
 
-	contractAbi, callData, err := abi.ReadAbiFormulateCall(abiSource, qContract.Function, qContract.Data)
+	contractAbi, callData, err := abi.ReadAbiFormulateCall(abiSource, qContract.Function, qContract.Data...)
 	if err != nil {
 		if qContract.Function == "()" {
 			log.Warn("Calling the fallback function")
