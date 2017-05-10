@@ -20,7 +20,7 @@ func LoadJobs(do *definitions.Do) (*jobs.Jobs, error) {
 	var fileName = do.YAMLPath
 	var jobset = jobs.EmptyJobs()
 
-	burrowClient := client.NewBurrowNodeClient(do.ChainURL, loggers.NewNoopInfoTraceLogger())
+	burrowClient := client.NewBurrowNodeClient(do.ChainURL, client.Logger())
 	_, chainID, _, err := burrowClient.ChainId()
 	log.WithField("=>", chainID).Info("Loaded chain ID")
 

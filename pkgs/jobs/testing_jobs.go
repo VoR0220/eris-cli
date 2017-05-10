@@ -102,7 +102,11 @@ func (qContract *QueryContract) Execute(jobs *Jobs) (*JobResults, error) {
 		return &JobResults{}, err
 	}
 
+	str := hex.EncodeToString(toAddrBytes)
+	log.Debug(str)
+
 	// create call
+
 	result, _, err := jobs.NodeClient.QueryContract(fromAddrBytes, toAddrBytes, callData)
 	if err != nil {
 		return &JobResults{}, err

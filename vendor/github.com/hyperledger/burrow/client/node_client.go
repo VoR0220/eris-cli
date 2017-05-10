@@ -171,6 +171,7 @@ func (burrowNodeClient *burrowNodeClient) ChainId() (ChainName, ChainId string, 
 // NOTE: there is no check on the caller;
 func (burrowNodeClient *burrowNodeClient) QueryContract(callerAddress, calleeAddress, data []byte) (ret []byte, gasUsed int64, err error) {
 	client := rpcclient.NewJSONRPCClient(burrowNodeClient.broadcastRPC)
+	fmt.Println("Made it here!")
 	callResult, err := tendermint_client.Call(client, callerAddress, calleeAddress, data)
 	if err != nil {
 		err = fmt.Errorf("Error connnecting to node (%s) to query contract at (%X) with data (%X)",

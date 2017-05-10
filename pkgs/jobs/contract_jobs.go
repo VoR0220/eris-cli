@@ -542,9 +542,13 @@ func (call *Call) Execute(jobs *Jobs) (*JobResults, error) {
 	}
 
 	// create call
+	log.Debug("Got to call")
 	tx, err := rpc.Call(jobs.NodeClient, jobs.KeyClient, jobs.PublicKey, call.Source, call.Destination, call.Amount, call.Nonce, call.Gas, call.Fee, hex.EncodeToString(callData))
 	if err != nil {
-		return &JobResults{}, err
+		tx, err = rpc.Call(jobs.NodeClient, jobs.KeyClient, jobs.PublicKey, call.Source, call.Destination, call.Amount, call.Nonce, call.Gas, call.Fee, hex.EncodeToString(callData))
+		if err != nil {
+			return &JobResults{}, fmt.Errorf("Connection issue: %v", err)
+		}
 	}
 	result, err := txFinalize(tx, jobs, Return)
 	if err != nil {
