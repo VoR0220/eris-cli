@@ -1,6 +1,6 @@
 pragma solidity ^0.4.0;
 
-/// import "contract_1.sol";
+/// import "example_1.sol";
 
 contract Contract1 {
 
