@@ -1,0 +1,20 @@
+jobs:
+
+- name: deployStorageK
+  job:
+    deploy:
+      contract: contract_1.sol
+
+- name: setStorage
+  job:
+    call:
+      destination: $deployStorageK
+      instance: Contract1
+      function: test
+
+- name: assertStorage
+  job:
+    assert:
+      key: $setStorage.0
+      relation: eq
+      val: "true"
