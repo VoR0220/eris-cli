@@ -554,6 +554,6 @@ func (call *Call) Execute(jobs *Jobs) (*JobResults, error) {
 	if err != nil {
 		return &JobResults{}, err
 	}
-
+	log.Debug("Going into the unpacker")
 	return Unpacker(contractAbi, call.Function, result.FullResult.ActualResult.([]byte))
 }

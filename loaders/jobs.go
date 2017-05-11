@@ -22,7 +22,7 @@ func LoadJobs(do *definitions.Do) (*jobs.Jobs, error) {
 
 	burrowClient := client.NewBurrowNodeClient(do.ChainURL, loggers.NewNoopInfoTraceLogger())
 	//for debugging only
-	burrowClient = client.NewBurrowNodeClient(do.ChainURL, log.NewBurrowInfoTraceLogger())
+	//burrowClient = client.NewBurrowNodeClient(do.ChainURL, log.NewBurrowInfoTraceLogger())
 	_, chainID, _, err := burrowClient.ChainId()
 	log.WithField("=>", chainID).Info("Loaded chain ID")
 

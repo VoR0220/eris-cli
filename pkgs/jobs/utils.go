@@ -125,18 +125,15 @@ func txFinalize(tx txs.Tx, jobs *Jobs, request TxResult) (*JobResults, error) {
 
 	if result.Address != nil {
 		log.WithField("=>", addr).Warn("Address")
-		log.WithField("=>", hash).Info("Transaction Hash")
 	}
-	log.WithField("=>", hash).Warn("Transaction Hash")
+	log.WithField("=>", hash).Info("Transaction Hash")
 	log.WithField("=>", blkHash).Debug("Block Hash")
-	if len(result.Return) != 0 {
-		if ret != "" {
-			log.WithField("=>", ret).Info("Return Value")
-		} else {
-			log.Debug("No return.")
-		}
-		log.WithField("=>", result.Exception).Debug("Exception")
+	if ret != "" {
+		log.WithField("=>", ret).Warn("Return Value")
+	} else {
+		log.Warn("No return.")
 	}
+	log.WithField("=>", result.Exception).Debug("Exception")
 
 	switch request {
 	case TxHash:
@@ -175,12 +172,14 @@ func Unpacker(contractAbi ethAbi.ABI, funcName string, output []byte) (*JobResul
 		var strResult string
 		if unpackedValues, ok := toUnpackInto.([]interface{}); ok {
 			strResult, err = abi.GetStringValue(unpackedValues[i], methodOutput.Type)
+			log.WithField("=>", strResult).Debug("Result")
 			namedResults[methodOutput.Name] = Type{ActualResult: unpackedValues, StringResult: strResult}
 		} else {
 			if unpackedValues, ok := toUnpackInto.(interface{}); !ok {
 				return &JobResults{}, fmt.Errorf("Unexpected error while converting unpacked values to readable format")
 			} else {
 				strResult, err = abi.GetStringValue(unpackedValues, methodOutput.Type)
+				log.WithField("=>", strResult).Debug("Result")
 				namedResults[methodOutput.Name] = Type{ActualResult: unpackedValues, StringResult: strResult}
 			}
 		}
