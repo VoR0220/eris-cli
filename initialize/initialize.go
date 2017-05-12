@@ -131,7 +131,6 @@ func pullDefaultImages(images []string) error {
 			"data",
 			"keys",
 			"db",
-			"compilers",
 			"solc",
 		}
 	}
@@ -139,11 +138,10 @@ func pullDefaultImages(images []string) error {
 	// Rewrite with versioned image names (full names
 	// without a registry prefix).
 	versionedImageNames := map[string]string{
-		"data":      version.ImageData,
-		"keys":      version.ImageKeys,
-		"db":        version.ImageDB,
-		"compilers": version.ImageCompilers,
-		"solc":      version.ImageSolc,
+		"data": version.ImageData,
+		"keys": version.ImageKeys,
+		"db":   version.ImageDB,
+		"solc": version.ImageSolc,
 	}
 
 	for i, image := range images {
