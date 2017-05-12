@@ -86,15 +86,17 @@ func DeployJob(deploy *definitions.Deploy, do *definitions.Do) (result string, e
 	switch {
 	case len(resp.Contracts) == 1:
 		log.WithField("path", contractPath).Info("Deploying the only contract in file")
-		response := resp.Contracts[contractPath]
-		//log.WithField("=>", response.Abi).Info("Abi")
-		//log.WithField("=>", response.Bin).Info("Bin")
-		if response.Bin != "" {
-			result, err = deployContract(deploy, do, contractPath, response)
-			if err != nil {
-				return "", err
+		for m, n := range resp.Contracts {
+			if n.Bin != "" {
+				result, err = deployContract(deploy, do, m, n)
+				if err != nil {
+					return "", err
+				}
 			}
 		}
+		//log.WithField("=>", response.Abi).Info("Abi")
+		//log.WithField("=>", response.Bin).Info("Bin")
+
 	case deploy.Instance == "all":
 		log.WithField("path", contractPath).Info("Deploying all contracts")
 		var baseObj string
