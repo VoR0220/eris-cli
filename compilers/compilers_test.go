@@ -204,7 +204,7 @@ func TestLinkingBinaries(t *testing.T) {
 		t.Fatalf("Expected no errors or warnings and expected contract items. Got %v for errors, %v for warnings, and %v for contract items", solReturn.Error, solReturn.Warning, solReturn.Contracts)
 	}
 	// note: When solc upgrades to 0.4.10, will need to add "simpleLibrary.sol:" to beginning of this string
-	template.Libraries = []string{"simpleLibrary.sol:Set:0x692a70d2e424a56d2c6c27aa97d1a86395877b3a"}
+	template.Libraries = "simpleLibrary.sol:Set:0x692a70d2e424a56d2c6c27aa97d1a86395877b3a"
 	binFile, err := os.Create("C.bin")
 	defer os.Remove("C.bin")
 	if err != nil {
@@ -251,7 +251,7 @@ func TestLinkingBinariesAndNormalCompileMixed(t *testing.T) {
 		t.Fatalf("Expected no errors or warnings and expected contract items. Got %v for errors, %v for warnings, and %v for contract items", solReturn.Error, solReturn.Warning, solReturn.Contracts)
 	}
 	// note: When solc upgrades to 0.4.10, will need to add "simpleLibrary.sol:" to beginning of this string
-	template.Libraries = []string{"simpleLibrary.sol:Set:0x692a70d2e424a56d2c6c27aa97d1a86395877b3a"}
+	template.Libraries = "simpleLibrary.sol:Set:0x692a70d2e424a56d2c6c27aa97d1a86395877b3a"
 	binFile, err := os.Create("C.bin")
 	defer os.Remove("C.bin")
 	if err != nil {

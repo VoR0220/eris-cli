@@ -43,9 +43,9 @@ type SolcTemplate struct {
 	// asm: assembly opcodes.
 	CombinedOutput []string `mapstructure:"combined-json" yaml:"combined-json"`
 	// (Optional) Direct string of library address mappings.
-	//  Syntax: <libraryName>:<address>
+	//  Syntax: <libraryName>:<address>,<libraryName>:<address>
 	//  Address is interpreted as a hex string optionally prefixed by 0x.
-	Libraries []string `mapstructure:"libraries" yaml:"libraries"`
+	Libraries string `mapstructure:"libraries" yaml:"libraries"`
 	// (Optional) Remappings, see https://solidity.readthedocs.io/en/latest/layout-of-source-files.html#use-in-actual-compilers
 	// Syntax: <remoteName>=<localName>
 	Remappings []string `mapstructure:"remappings" yaml:"remappings"`
@@ -75,7 +75,7 @@ func (s *SolcTemplate) Compile(files []string, version string) (Return, error) {
 	}
 
 	if len(binFiles) > 0 {
-		solcExecute = append(solcExecute, append([]string{"--link", "--libraries", strings.Join(s.Libraries, ",")}, binFiles...)...)
+		solcExecute = append(solcExecute, append([]string{"--link", "--libraries", s.Libraries}, binFiles...)...)
 		log.Warn(solcExecute)
 		output, err := ExecuteCompilerCommand(image, solcExecute)
 		//Parse output into a return
@@ -107,7 +107,7 @@ func (s *SolcTemplate) Compile(files []string, version string) (Return, error) {
 			solcExecute = append(solcExecute, "--combined-json", strings.Join(s.CombinedOutput, ","))
 		}
 		if len(s.Libraries) > 0 {
-			solcExecute = append(solcExecute, "--libraries", strings.Join(s.Libraries, ","))
+			solcExecute = append(solcExecute, "--libraries", s.Libraries)
 		}
 		if s.Optimize {
 			solcExecute = append(solcExecute, "--optimize")

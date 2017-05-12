@@ -13,7 +13,7 @@ import (
 	"github.com/monax/cli/pkgs/abi"
 	"github.com/monax/cli/util"
 
-	compilers "github.com/monax/compilers/perform"
+	"github.com/monax/cli/compilers"
 
 	"github.com/hyperledger/burrow/client"
 	"github.com/hyperledger/burrow/client/rpc"
@@ -21,6 +21,13 @@ import (
 	"github.com/hyperledger/burrow/logging/loggers"
 	"github.com/hyperledger/burrow/txs"
 )
+
+func formCompiler(libraries string) *compilers.SolcTemplate {
+	return &compilers.SolcTemplate{
+		CombinedOutput: []string{"bin", "abi"},
+		Libraries: libraries
+	}
+}
 
 func DeployJob(deploy *definitions.Deploy, do *definitions.Do) (result string, err error) {
 	// Preprocess variables
@@ -42,6 +49,8 @@ func DeployJob(deploy *definitions.Deploy, do *definitions.Do) (result string, e
 	deploy.Amount = useDefault(deploy.Amount, do.DefaultAmount)
 	deploy.Fee = useDefault(deploy.Fee, do.DefaultFee)
 	deploy.Gas = useDefault(deploy.Gas, do.DefaultGas)
+
+	solc := formCompiler(deploy.Libraries)
 
 	// assemble contract
 	var contractPath string
