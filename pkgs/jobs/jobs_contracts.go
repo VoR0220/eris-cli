@@ -87,8 +87,8 @@ func DeployJob(deploy *definitions.Deploy, do *definitions.Do) (result string, e
 	case len(resp.Contracts) == 1:
 		log.WithField("path", contractPath).Info("Deploying the only contract in file")
 		response := resp.Contracts[contractPath]
-		log.WithField("=>", response.Abi).Info("Abi")
-		log.WithField("=>", response.Bin).Info("Bin")
+		//log.WithField("=>", response.Abi).Info("Abi")
+		//log.WithField("=>", response.Bin).Info("Bin")
 		if response.Bin != "" {
 			result, err = deployContract(deploy, do, contractPath, response)
 			if err != nil {

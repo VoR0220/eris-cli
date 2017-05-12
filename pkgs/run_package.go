@@ -10,7 +10,6 @@ import (
 	"github.com/monax/cli/loaders"
 	"github.com/monax/cli/log"
 	"github.com/monax/cli/pkgs/jobs"
-	"github.com/monax/cli/services"
 	"github.com/monax/cli/util"
 )
 
@@ -78,10 +77,6 @@ func RunPackage(do *definitions.Do) error {
 		}
 	}
 
-	if err := bootCompiler(); err != nil {
-		return err
-	}
-
 	return jobs.RunJobs(do)
 }
 
@@ -108,17 +103,6 @@ func setChainIPandPort(do *definitions.Do) error {
 	do.ChainPort = "46657" // [zr] this can be hardcoded even if [--publish] is used
 
 	return nil
-}
-
-func bootCompiler() error {
-
-	// add the compilers to the local services if the flag is pushed
-	// [csk] note - when we move to default local compilers we'll remove
-	// the compilers service completely and this will need to get
-	// reworked to utilize DockerRun with a populated service def.
-	doComp := definitions.NowDo()
-	doComp.Name = "solc"
-	return services.EnsureRunning(doComp)
 }
 
 func printPathPackage(do *definitions.Do) {

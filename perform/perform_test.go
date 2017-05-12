@@ -23,8 +23,8 @@ func TestMain(m *testing.M) {
 	// log.SetLevel(log.DebugLevel)
 
 	testutil.IfExit(testutil.Init(testutil.Pull{
-		Images:   []string{"data", "keys", "compilers"},
-		Services: []string{"keys", "compilers"},
+		Images:   []string{"data", "keys", "keys"},
+		Services: []string{"keys", "keys"},
 	}))
 
 	testutil.RemoveAllContainers()
@@ -189,7 +189,7 @@ func TestExecDataBufferNotOverwritten(t *testing.T) {
 
 func TestRunServiceSimple(t *testing.T) {
 	const (
-		name = "compilers"
+		name = "keys"
 	)
 
 	defer testutil.RemoveAllContainers()
@@ -217,7 +217,7 @@ func TestRunServiceSimple(t *testing.T) {
 
 func TestRunServiceNoDataContainer(t *testing.T) {
 	const (
-		name = "compilers"
+		name = "keys"
 	)
 
 	defer testutil.RemoveAllContainers()
@@ -246,7 +246,7 @@ func TestRunServiceNoDataContainer(t *testing.T) {
 
 func TestRunServiceAlreadyRunning(t *testing.T) {
 	const (
-		name = "compilers"
+		name = "keys"
 	)
 
 	defer testutil.RemoveAllContainers()
@@ -285,7 +285,7 @@ func TestRunServiceAlreadyRunning(t *testing.T) {
 
 func TestRunServiceNonExistentImage(t *testing.T) {
 	const (
-		name = "compilers"
+		name = "keys"
 	)
 
 	defer testutil.RemoveAllContainers()
@@ -303,7 +303,7 @@ func TestRunServiceNonExistentImage(t *testing.T) {
 
 func TestExecServiceSimple(t *testing.T) {
 	const (
-		name = "compilers"
+		name = "keys"
 	)
 
 	defer testutil.RemoveAllContainers()
@@ -333,7 +333,7 @@ func TestExecServiceSimple(t *testing.T) {
 
 func TestExecServiceBufferNotOverwritten(t *testing.T) {
 	const (
-		name = "compilers"
+		name = "keys"
 	)
 
 	defer testutil.RemoveAllContainers()
@@ -499,7 +499,7 @@ exec_host = "MONAX_KEYS_HOST"
 
 func TestExecServiceVolume(t *testing.T) {
 	const (
-		name = "compilers"
+		name = "keys"
 	)
 
 	// Don't work on Windows without MSYS or Cygwin.
@@ -535,7 +535,7 @@ func TestExecServiceVolume(t *testing.T) {
 
 func TestExecServiceMount(t *testing.T) {
 	const (
-		name = "compilers"
+		name = "keys"
 	)
 
 	// Don't work on Windows without MSYS or Cygwin.
@@ -574,7 +574,7 @@ func TestExecServiceMount(t *testing.T) {
 
 func TestExecServiceBadMount1(t *testing.T) {
 	const (
-		name = "compilers"
+		name = "keys"
 	)
 
 	defer testutil.RemoveAllContainers()
@@ -597,7 +597,7 @@ func TestExecServiceBadMount1(t *testing.T) {
 
 func TestExecServiceBadMount2(t *testing.T) {
 	const (
-		name = "compilers"
+		name = "keys"
 	)
 
 	defer testutil.RemoveAllContainers()
@@ -620,7 +620,7 @@ func TestExecServiceBadMount2(t *testing.T) {
 
 func TestExecServiceLogOutput(t *testing.T) {
 	const (
-		name = "compilers"
+		name = "keys"
 	)
 
 	defer testutil.RemoveAllContainers()
@@ -674,7 +674,7 @@ func TestExecServiceLogOutputLongRunning(t *testing.T) {
 
 func TestExecServiceLogOutputInteractive(t *testing.T) {
 	const (
-		name = "compilers"
+		name = "keys"
 	)
 
 	defer testutil.RemoveAllContainers()
@@ -701,7 +701,7 @@ func TestExecServiceLogOutputInteractive(t *testing.T) {
 
 func TestExecServiceTwice(t *testing.T) {
 	const (
-		name = "compilers"
+		name = "keys"
 	)
 
 	defer testutil.RemoveAllContainers()
@@ -736,7 +736,7 @@ func TestExecServiceTwice(t *testing.T) {
 
 func TestExecServiceTwiceWithoutData(t *testing.T) {
 	const (
-		name = "compilers"
+		name = "keys"
 	)
 
 	defer testutil.RemoveAllContainers()
@@ -771,7 +771,7 @@ func TestExecServiceTwiceWithoutData(t *testing.T) {
 
 func TestExecServiceBadCommandLine(t *testing.T) {
 	const (
-		name = "compilers"
+		name = "keys"
 	)
 
 	defer testutil.RemoveAllContainers()
@@ -801,7 +801,7 @@ func TestExecServiceBadCommandLine(t *testing.T) {
 
 func TestExecServiceNonInteractive(t *testing.T) {
 	const (
-		name = "compilers"
+		name = "keys"
 	)
 
 	defer testutil.RemoveAllContainers()
@@ -835,7 +835,7 @@ func TestExecServiceNonInteractive(t *testing.T) {
 /*
 func TestExecServiceAfterRunService(t *testing.T) {
 	const (
-		name = "compilers"
+		name = "keys"
 	)
 
 	defer testutil.RemoveAllContainers()
@@ -862,7 +862,7 @@ func TestExecServiceAfterRunService(t *testing.T) {
 
 func TestExecServiceAfterRunServiceWithPublishedPorts1(t *testing.T) {
 	const (
-		name = "compilers"
+		name = "keys"
 	)
 
 	defer testutil.RemoveAllContainers()
@@ -897,7 +897,7 @@ func TestExecServiceAfterRunServiceWithPublishedPorts1(t *testing.T) {
 
 func TestExecServiceAfterRunServiceWithPublishedPorts2(t *testing.T) {
 	const (
-		name = "compilers"
+		name = "keys"
 	)
 
 	defer testutil.RemoveAllContainers()
@@ -932,7 +932,7 @@ func TestExecServiceAfterRunServiceWithPublishedPorts2(t *testing.T) {
 
 func TestContainerExistsSimple(t *testing.T) {
 	const (
-		name = "compilers"
+		name = "keys"
 	)
 
 	defer testutil.RemoveAllContainers()
@@ -962,7 +962,7 @@ func TestContainerExistsSimple(t *testing.T) {
 
 func TestContainerExistsBadName(t *testing.T) {
 	const (
-		name = "compilers"
+		name = "keys"
 	)
 
 	defer testutil.RemoveAllContainers()
@@ -984,7 +984,7 @@ func TestContainerExistsBadName(t *testing.T) {
 
 func TestContainerExistsAfterRemove(t *testing.T) {
 	const (
-		name = "compilers"
+		name = "keys"
 	)
 
 	defer testutil.RemoveAllContainers()
@@ -1015,7 +1015,7 @@ func TestContainerExistsAfterRemove(t *testing.T) {
 
 func TestContainerRunningSimple(t *testing.T) {
 	const (
-		name = "compilers"
+		name = "keys"
 	)
 
 	defer testutil.RemoveAllContainers()
@@ -1045,7 +1045,7 @@ func TestContainerRunningSimple(t *testing.T) {
 
 func TestContainerRunningBadName(t *testing.T) {
 	const (
-		name = "compilers"
+		name = "keys"
 	)
 
 	defer testutil.RemoveAllContainers()
@@ -1075,7 +1075,7 @@ func TestContainerRunningBadName(t *testing.T) {
 
 func TestContainerRunningAfterRemove(t *testing.T) {
 	const (
-		name = "compilers"
+		name = "keys"
 	)
 
 	defer testutil.RemoveAllContainers()
@@ -1106,7 +1106,7 @@ func TestContainerRunningAfterRemove(t *testing.T) {
 
 func TestRemoveWithoutData(t *testing.T) {
 	const (
-		name = "compilers"
+		name = "keys"
 	)
 
 	defer testutil.RemoveAllContainers()
@@ -1156,7 +1156,7 @@ func TestRemoveWithoutData(t *testing.T) {
 
 func TestRemoveWithData(t *testing.T) {
 	const (
-		name = "compilers"
+		name = "keys"
 	)
 
 	defer testutil.RemoveAllContainers()
@@ -1201,7 +1201,7 @@ func TestRemoveWithData(t *testing.T) {
 
 func TestRemoveNonExistent(t *testing.T) {
 	const (
-		name = "compilers"
+		name = "keys"
 	)
 
 	defer testutil.RemoveAllContainers()
@@ -1219,7 +1219,7 @@ func TestRemoveNonExistent(t *testing.T) {
 
 func TestRemoveServiceWithoutStopping(t *testing.T) {
 	const (
-		name = "compilers"
+		name = "keys"
 	)
 
 	defer testutil.RemoveAllContainers()
@@ -1244,7 +1244,7 @@ func TestRemoveServiceWithoutStopping(t *testing.T) {
 
 func TestStopSimple(t *testing.T) {
 	const (
-		name = "compilers"
+		name = "keys"
 	)
 
 	defer testutil.RemoveAllContainers()
@@ -1281,7 +1281,7 @@ func TestStopSimple(t *testing.T) {
 
 func TestStopDataContainer(t *testing.T) {
 	const (
-		name = "compilers"
+		name = "keys"
 	)
 
 	defer testutil.RemoveAllContainers()
@@ -1307,7 +1307,7 @@ func TestStopDataContainer(t *testing.T) {
 
 func TestRebuildSimple(t *testing.T) {
 	const (
-		name    = "compilers"
+		name    = "keys"
 		timeout = 5
 	)
 
@@ -1341,7 +1341,7 @@ func TestRebuildSimple(t *testing.T) {
 
 func TestRebuildBadName(t *testing.T) {
 	const (
-		name    = "compilers"
+		name    = "keys"
 		timeout = 5
 	)
 
@@ -1365,7 +1365,7 @@ func TestRebuildBadName(t *testing.T) {
 
 func TestRebuildNotCreated(t *testing.T) {
 	const (
-		name    = "compilers"
+		name    = "keys"
 		timeout = 5
 	)
 
@@ -1388,7 +1388,7 @@ func TestRebuildNotCreated(t *testing.T) {
 
 func TestRebuildTimeout0(t *testing.T) {
 	const (
-		name    = "compilers"
+		name    = "keys"
 		timeout = 0
 	)
 
@@ -1422,7 +1422,7 @@ func TestRebuildTimeout0(t *testing.T) {
 
 func TestRebuildNotRunning(t *testing.T) {
 	const (
-		name    = "compilers"
+		name    = "keys"
 		timeout = 5
 	)
 
@@ -1644,7 +1644,7 @@ func TestPullRepeat(t *testing.T) {
 
 func TestPullBadName(t *testing.T) {
 	const (
-		name = "compilers"
+		name = "keys"
 	)
 
 	defer testutil.RemoveAllContainers()
@@ -1665,7 +1665,7 @@ func TestPullBadName(t *testing.T) {
 // https://github.com/monax/cli/issues/1262
 func testLogsSimple(t *testing.T) {
 	const (
-		name = "compilers"
+		name = "keys"
 		tail = "100"
 	)
 
@@ -1707,7 +1707,7 @@ func testLogsSimple(t *testing.T) {
 
 func TestLogsNilConfig(t *testing.T) {
 	const (
-		name = "compilers"
+		name = "keys"
 		tail = "1"
 	)
 
@@ -1741,7 +1741,7 @@ func TestLogsNilConfig(t *testing.T) {
 
 func TestLogsFollow(t *testing.T) {
 	const (
-		name = "compilers"
+		name = "keys"
 		tail = "1"
 	)
 
@@ -1811,7 +1811,7 @@ func TestLogsFollow(t *testing.T) {
 
 func TestLogsTail0(t *testing.T) {
 	const (
-		name = "compilers"
+		name = "keys"
 		tail = "0"
 	)
 
@@ -1848,7 +1848,7 @@ func TestLogsTail0(t *testing.T) {
 
 func TestLogsBadName(t *testing.T) {
 	const (
-		name = "compilers"
+		name = "keys"
 		tail = "1"
 	)
 
@@ -1867,7 +1867,7 @@ func TestLogsBadName(t *testing.T) {
 
 func TestLogsBadServiceName(t *testing.T) {
 	const (
-		name = "compilers"
+		name = "keys"
 		tail = "1"
 	)
 	defer testutil.RemoveAllContainers()
@@ -1885,7 +1885,7 @@ func TestLogsBadServiceName(t *testing.T) {
 
 func TestInspectSimple(t *testing.T) {
 	const (
-		name = "compilers"
+		name = "keys"
 	)
 
 	defer testutil.RemoveAllContainers()
@@ -1917,7 +1917,7 @@ func TestInspectSimple(t *testing.T) {
 
 func TestInspectLine(t *testing.T) {
 	const (
-		name = "compilers"
+		name = "keys"
 	)
 
 	defer testutil.RemoveAllContainers()
@@ -1943,7 +1943,7 @@ func TestInspectLine(t *testing.T) {
 
 func TestInspectField(t *testing.T) {
 	const (
-		name = "compilers"
+		name = "keys"
 	)
 
 	defer testutil.RemoveAllContainers()
@@ -1975,7 +1975,7 @@ func TestInspectField(t *testing.T) {
 
 func TestInspectStoppedContainer(t *testing.T) {
 	const (
-		name = "compilers"
+		name = "keys"
 	)
 
 	defer testutil.RemoveAllContainers()
@@ -2007,7 +2007,7 @@ func TestInspectStoppedContainer(t *testing.T) {
 
 func TestInspectBadName(t *testing.T) {
 	const (
-		name = "compilers"
+		name = "keys"
 	)
 
 	defer testutil.RemoveAllContainers()
