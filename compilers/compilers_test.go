@@ -8,14 +8,20 @@ import (
 	"testing"
 
 	"github.com/monax/cli/log"
-	"github.com/monax/cli/util"
+	"github.com/monax/cli/testutil"
 	"github.com/monax/cli/version"
 )
 
 func TestMain(m *testing.M) {
 	log.SetLevel(log.InfoLevel)
-	util.DockerConnect(false, "monax")
+	testutil.IfExit(testutil.Init(testutil.Pull{
+		Images: []string{"solc"},
+	}))
+
+	testutil.RemoveAllContainers()
+
 	exitCode := m.Run()
+	testutil.IfExit(testutil.TearDown())
 	os.Exit(exitCode)
 }
 

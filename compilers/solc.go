@@ -62,7 +62,7 @@ type SolcTemplate struct {
 
 // Compiles a series of files using the solidity compiler
 func (s *SolcTemplate) Compile(files []string, version string) (Return, error) {
-	solcExecute := []string{"solc"}
+	var solcExecute []string
 	solReturn := &SolcReturn{}
 	image := "ethereum/solc:" + version
 
@@ -90,7 +90,7 @@ func (s *SolcTemplate) Compile(files []string, version string) (Return, error) {
 		if len(solFiles) == 0 {
 			return Return{}, nil
 		}
-		solcExecute = []string{"solc"}
+		solcExecute = []string{}
 	}
 
 	//assemble command

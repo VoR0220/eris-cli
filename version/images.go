@@ -11,7 +11,7 @@ const (
 	DB_VERSION        = "0.17.0"
 	KEYS_VERSION      = "0.17.0"
 	COMPILERS_VERSION = "0.17.0"
-	SOLC_VERSION      = "stable"
+	SOLC_VERSION      = "0.4.11"
 )
 
 var (
